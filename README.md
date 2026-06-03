@@ -7,16 +7,20 @@ Local, per-project documentation + task app. All four views are built:
 - **Architecture** — read-only render of `docs/architecture.md` with an auto-generated table of contents (Claude Code writes it).
 - **Tickets** — card grid + detail modal over `tasks/*.md`. Each ticket carries a WYSIWYG instruction body; a Todo panel (multi-line, auto-expanding) sits alongside, and todos can be promoted to tickets.
 
-Content is **files-first** — everything lives in the host project, not in this app:
+Content is **files-first** — everything lives in the host project as plain text (no database):
 
 ```
-<project>/docs/idea.md          # idea capture (editable)
+<project>/docs/idea.md           # idea capture (editable)
 <project>/docs/workflow.md       # Workflow view (editable)
-<project>/docs/architecture.md   # read-only in UI; Claude Code edits   (later phase)
-<project>/docs/diagram.mmd       # read-only in UI; Claude Code edits   (later phase)
-<project>/tasks/*.md             # ticket / implementation inbox         (later phase)
-<project>/.project-docs/state.db # todos + config only (never content)
+<project>/docs/architecture.md   # read-only in UI; Claude Code edits
+<project>/docs/diagram.mmd       # read-only in UI; Claude Code edits
+<project>/tasks/*.md             # ticket / implementation inbox
+<project>/tasks/_todos.md        # the Todo list (the "_" keeps it out of the ticket grid)
+<project>/.project-docs/CLAUDE.md # the Claude Code integration contract
 ```
+
+Title defaults to the project folder name (override with `DOCS_TITLE`); port defaults to `4500`
+(override with `PORT`). There is no database — everything is committable text.
 
 ## Run
 

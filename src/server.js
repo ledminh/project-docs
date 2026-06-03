@@ -4,7 +4,6 @@ const path = require('path');
 const fs = require('fs');
 
 const { ROOT, ensureDirs } = require('./paths');
-const { getConfig, setConfig } = require('./db');
 const { readDoc } = require('./files');
 const docsRouter = require('./routes/docs');
 const todosRouter = require('./routes/todos');
@@ -13,7 +12,8 @@ const ticketsRouter = require('./routes/tickets');
 ensureDirs();
 
 const app = express();
-const PORT = process.env.PORT || getConfig('port', '4500');
+const PORT = process.env.PORT || 4500;
+const TITLE = process.env.DOCS_TITLE || path.basename(ROOT) || 'Project Docs';
 const TMPL = path.join(__dirname, 'template.html');
 
 app.use(express.json({ limit: '10mb' }));
@@ -24,16 +24,12 @@ app.use('/api/tickets', ticketsRouter);
 
 // ── Config API ───────────────────────────────────────────────────────────────
 app.get('/api/config', (_req, res) => {
-  res.json({ title: getConfig('title', 'Project Docs'), port: String(PORT), root: ROOT });
-});
-app.put('/api/config', (req, res) => {
-  if (req.body?.title !== undefined) setConfig('title', String(req.body.title).trim() || 'Project Docs');
-  res.json({ ok: true, title: getConfig('title', 'Project Docs') });
+  res.json({ title: TITLE, port: String(PORT), root: ROOT });
 });
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 const VIEWS = ['workflow', 'diagram', 'architecture', 'tickets'];
-function title() { return getConfig('title', 'Project Docs'); }
+function title() { return TITLE; }
 
 // Landing: empty-state idea capture until workflow.md exists, then Workflow.
 app.get('/', (_req, res) => {

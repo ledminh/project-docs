@@ -10,7 +10,6 @@
     "setup": "node bin/setup.js"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
     "express": "^4.19.0"
   },
   "engines": { "node": ">=20" }

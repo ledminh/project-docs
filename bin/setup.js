@@ -47,6 +47,12 @@ When asked to **"work the tickets"**:
 4. Set \`status: done\` when the whole ticket is complete.
 
 Never delete task files.
+
+\`tasks/_todos.md\` is the user's lightweight scratch todo list (the leading \`_\` keeps it out of the
+ticket grid). It is not a ticket — don't implement it directly; the user promotes todos into tickets.
+
+There is no database. Everything is plain text in \`docs/\` and \`tasks/\`. \`.project-docs/\` holds only
+this contract.
 `;
 
 function writeIfChanged(file, content) {
