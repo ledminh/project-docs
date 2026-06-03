@@ -91,8 +91,17 @@ body {
 /* ── Rich document content (shared by the Architecture viewer & Workflow editor) ── */
 .toastui-editor-contents {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 15px; line-height: 1.7; color: #25303f;
+  font-size: 15.5px; line-height: 1.8; color: #2b3543; letter-spacing: .004em;
 }
+/* cap line length for comfortable reading; tables/diagrams can still go full width */
+.toastui-editor-contents > p,
+.toastui-editor-contents > ul,
+.toastui-editor-contents > ol,
+.toastui-editor-contents > blockquote,
+.toastui-editor-contents > h1,
+.toastui-editor-contents > h2,
+.toastui-editor-contents > h3,
+.toastui-editor-contents > h4 { max-width: 760px; }
 .toastui-editor-contents h1,
 .toastui-editor-contents h2,
 .toastui-editor-contents h3,
@@ -115,13 +124,19 @@ body {
 .toastui-editor-contents blockquote { margin: 0 0 16px; padding: 4px 16px; border-left: 4px solid var(--green); background: #f3faf7; color: var(--muted); border-radius: 0 6px 6px 0; }
 .toastui-editor-contents hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
 
-/* Tables — styled like the source docs */
-.toastui-editor-contents table { width: 100%; border-collapse: collapse; margin: 4px 0 20px; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.toastui-editor-contents thead th { background: var(--green-soft); color: var(--green-ink); font-weight: 700; text-align: left; }
+/* Tables — styled like the source docs: dark-green header, white bold text */
+.toastui-editor-contents table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.toastui-editor-contents table th,
+.toastui-editor-contents thead th {
+  background: var(--green-ink) !important;   /* #0c3b2c — dark green, like the docx */
+  color: #ffffff !important;
+  font-weight: 700; text-align: left; letter-spacing: .01em;
+  border-color: #14503c;
+}
 .toastui-editor-contents th,
-.toastui-editor-contents td { border: 1px solid var(--line); padding: 8px 12px; vertical-align: top; }
-.toastui-editor-contents tbody tr:nth-child(even) { background: #fafbfc; }
-.toastui-editor-contents tbody tr:hover { background: #f3faf7; }
+.toastui-editor-contents td { border: 1px solid var(--line); padding: 9px 13px; vertical-align: top; }
+.toastui-editor-contents tbody tr:nth-child(even) { background: #f7faf9; }
+.toastui-editor-contents tbody tr:hover { background: #eef7f3; }
 
 /* Status badges injected into architecture tables */
 .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .02em; text-transform: capitalize; }
