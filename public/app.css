@@ -51,7 +51,7 @@ body {
 .muted { color: var(--muted); }
 
 /* ── Editable doc views (idea / workflow) ────────────────────────────────────*/
-.editor-view { max-width: 1100px; }
+.editor-view { max-width: 940px; margin: 0 auto; }
 #editor { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .editor-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 16px; max-width: 1100px; }
 .save-status { color: var(--muted); font-size: 13px; }
@@ -86,67 +86,70 @@ body {
 #arch-toc a:hover { color: var(--green); border-left-color: var(--green); }
 #arch-toc a.toc-h1 { font-weight: 700; color: var(--ink); }
 #arch-toc a.toc-h3 { padding-left: 24px; }
-.doc-viewer { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 28px 44px; box-shadow: 0 1px 3px rgba(15,35,59,.04); }
+/* The Architecture doc reads like a printed page: centered column, generous margins, soft shadow */
+.doc-viewer {
+  background: #fffefb; border: 1px solid #ecefe9; border-radius: 14px;
+  max-width: 880px; margin: 4px auto 0; padding: 56px 64px 64px;
+  box-shadow: 0 8px 30px rgba(15,35,59,.07), 0 1px 2px rgba(15,35,59,.04);
+}
 
 /* ── Rich document content (shared by the Architecture viewer & Workflow editor) ── */
 .toastui-editor-contents {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 15.5px; line-height: 1.8; color: #2b3543; letter-spacing: .004em;
+  font-family: 'Iowan Old Style', 'Palatino', 'Georgia', -apple-system, BlinkMacSystemFont, 'Segoe UI', serif;
+  font-size: 16.5px; line-height: 1.85; color: #232b36; letter-spacing: .002em;
+  -webkit-font-smoothing: antialiased;
 }
-/* cap line length for comfortable reading; tables/diagrams can still go full width */
-.toastui-editor-contents > p,
-.toastui-editor-contents > ul,
-.toastui-editor-contents > ol,
-.toastui-editor-contents > blockquote,
-.toastui-editor-contents > h1,
-.toastui-editor-contents > h2,
-.toastui-editor-contents > h3,
-.toastui-editor-contents > h4 { max-width: 760px; }
 .toastui-editor-contents h1,
 .toastui-editor-contents h2,
 .toastui-editor-contents h3,
-.toastui-editor-contents h4 { color: var(--green-ink); font-weight: 800; line-height: 1.3; scroll-margin-top: calc(var(--nav-h) + 20px); border: 0; }
-.toastui-editor-contents h1 { font-size: 28px; margin: 4px 0 18px; }
-.toastui-editor-contents h2 { font-size: 21px; font-weight: 700; margin: 38px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--green-soft); }
-.toastui-editor-contents h3 { font-size: 16.5px; font-weight: 700; color: var(--ink); margin: 26px 0 10px; }
-.toastui-editor-contents h4 { font-size: 15px; color: var(--muted); margin: 20px 0 8px; }
-.toastui-editor-contents p { margin: 0 0 14px; }
+.toastui-editor-contents h4 {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--green-ink); font-weight: 700; line-height: 1.28;
+  scroll-margin-top: calc(var(--nav-h) + 20px); border: 0;
+}
+.toastui-editor-contents h1 { font-size: 32px; font-weight: 800; letter-spacing: -.015em; margin: 0 0 6px; }
+/* lead paragraph right after the title */
+.toastui-editor-contents h1 + p { font-size: 18px; line-height: 1.6; color: var(--muted); margin: 0 0 30px; padding-bottom: 24px; border-bottom: 1px solid #ecefe9; }
+.toastui-editor-contents h2 { font-size: 23px; margin: 48px 0 16px; padding-bottom: 10px; border-bottom: 2px solid var(--green-soft); }
+.toastui-editor-contents h3 { font-size: 18px; color: var(--ink); margin: 32px 0 10px; }
+.toastui-editor-contents h4 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--green); margin: 24px 0 8px; }
+.toastui-editor-contents p { margin: 0 0 16px; }
 .toastui-editor-contents ul,
-.toastui-editor-contents ol { margin: 0 0 14px; padding-left: 26px; }
-.toastui-editor-contents li { margin: 5px 0; }
-.toastui-editor-contents li::marker { color: var(--green); }
-.toastui-editor-contents a { color: var(--green); text-decoration: none; border-bottom: 1px solid transparent; }
+.toastui-editor-contents ol { margin: 0 0 16px; padding-left: 26px; }
+.toastui-editor-contents li { margin: 6px 0; padding-left: 4px; }
+.toastui-editor-contents li::marker { color: var(--green); font-weight: 700; }
+.toastui-editor-contents a { color: var(--green); text-decoration: none; border-bottom: 1px solid rgba(31,138,112,.35); }
 .toastui-editor-contents a:hover { border-bottom-color: var(--green); }
-.toastui-editor-contents strong { color: var(--green-ink); }
-.toastui-editor-contents code { background: #eef2f5; color: #0b4f3f; padding: 1.5px 6px; border-radius: 5px; font-size: .88em; font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; }
-.toastui-editor-contents pre { background: #f6f8fa; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow: auto; margin: 0 0 16px; }
-.toastui-editor-contents pre code { background: none; padding: 0; color: #1a2433; font-size: 13px; line-height: 1.55; }
-.toastui-editor-contents blockquote { margin: 0 0 16px; padding: 4px 16px; border-left: 4px solid var(--green); background: #f3faf7; color: var(--muted); border-radius: 0 6px 6px 0; }
-.toastui-editor-contents hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+.toastui-editor-contents strong { color: var(--green-ink); font-weight: 700; }
+.toastui-editor-contents code { background: #eef2f5; color: #0b4f3f; padding: 1.5px 6px; border-radius: 5px; font-size: .82em; font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; }
+.toastui-editor-contents pre { background: #0f2e24; border: 0; border-radius: 10px; padding: 16px 18px; overflow: auto; margin: 0 0 18px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
+.toastui-editor-contents pre code { background: none; padding: 0; color: #d7f0e3; font-size: 12.5px; line-height: 1.6; }
+.toastui-editor-contents blockquote { margin: 0 0 18px; padding: 12px 18px; border-left: 4px solid var(--green); background: #f3faf7; color: #3a4a44; border-radius: 0 8px 8px 0; }
+.toastui-editor-contents blockquote p { margin: 0; }
+.toastui-editor-contents hr { border: 0; height: 1px; background: linear-gradient(90deg, var(--green-soft), transparent); margin: 32px 0; }
 
-/* Tables — styled like the source docs: dark-green header, white bold text */
-.toastui-editor-contents table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+/* Tables — dark-green header, white bold text; clean ruled body like the docx */
+.toastui-editor-contents table { width: 100%; border-collapse: collapse; margin: 10px 0 26px; font-size: 14.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 1px solid #e3e7ec; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(15,35,59,.04); }
 .toastui-editor-contents table th,
 .toastui-editor-contents thead th {
   background: var(--green-ink) !important;   /* #0c3b2c — dark green, like the docx */
   color: #ffffff !important;
-  font-weight: 700; text-align: left; letter-spacing: .01em;
-  border-color: #14503c;
+  font-weight: 700; text-align: left; letter-spacing: .01em; padding: 11px 15px;
+  border-color: #14503c; border-bottom: 0;
 }
-.toastui-editor-contents th,
-.toastui-editor-contents td { border: 1px solid var(--line); padding: 9px 13px; vertical-align: top; }
-.toastui-editor-contents tbody tr:nth-child(even) { background: #f7faf9; }
-.toastui-editor-contents tbody tr:hover { background: #eef7f3; }
+.toastui-editor-contents td { border: 1px solid #e8ebef; padding: 10px 15px; vertical-align: top; }
+.toastui-editor-contents tbody tr:nth-child(even) { background: #f6faf8; }
+.toastui-editor-contents tbody tr:hover { background: #ecf6f1; }
 
 /* Status badges injected into architecture tables */
-.badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .02em; text-transform: capitalize; }
+.badge { display: inline-block; padding: 2.5px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: capitalize; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .badge-built   { background: #dcfce7; color: #166534; }
 .badge-scaffold{ background: #e2e8f0; color: #475569; }
 .badge-planned { background: #f1f5f9; color: #64748b; }
 .badge-partial { background: #fef9c3; color: #854d0e; }
 
 /* Rendered mermaid diagrams inside the Architecture doc */
-.mermaid-figure { margin: 8px 0 24px; padding: 20px; background: #fbfdfc; border: 1px solid var(--line); border-radius: 10px; text-align: center; overflow: auto; }
+.mermaid-figure { margin: 14px 0 28px; padding: 24px; background: #fbfdfc; border: 1px solid #e8ebef; border-radius: 12px; text-align: center; overflow: auto; box-shadow: 0 1px 2px rgba(15,35,59,.04); }
 .mermaid-figure svg { max-width: 100%; height: auto; }
 
 /* ── Diagram ─────────────────────────────────────────────────────────────────*/
