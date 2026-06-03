@@ -1,0 +1,10 @@
+{
+  "name": "project-docs",
+  "version": "1.0.0",
+  "description": "Scaffold the Project Docs app (Workflow / Diagram / Architecture / Tickets) into any project and drive it from Claude Code.",
+  "author": { "name": "Minh Le" },
+  "homepage": "https://github.com/ledminh/project-docs",
+  "repository": "https://github.com/ledminh/project-docs",
+  "license": "MIT",
+  "keywords": ["docs", "tickets", "workflow", "scaffold", "project-management"]
+}

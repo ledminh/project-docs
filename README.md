@@ -67,22 +67,32 @@ contract, and adds an `@.claude/project-docs.md` import to the project's root `C
 
 ## Reuse on every project
 
-Three layers, cheapest first:
+Pick whichever fits; the plugin is the nicest.
 
-1. **GitHub template repo.** Push this folder to a repo named `project-docs` and mark it a template.
-   Then in any project: `npx degit <OWNER>/project-docs .project-docs && cd .project-docs && npm install && npm run setup`.
-2. **Claude Code skill.** `skills/docs-init/` is a ready skill — copy it into your Claude Code
-   skills directory (or bundle it in a plugin). Then just tell Claude Code *"set up project docs here"*
-   and it runs the scaffold. Set `PROJECT_DOCS_SRC` to a local clone path, or edit the repo `<OWNER>`
-   placeholder in the skill.
-3. **Global `~/.claude/CLAUDE.md`** so Claude Code knows the convention everywhere:
+1. **Claude Code plugin (recommended).** This repo is also a one-plugin marketplace, so you install
+   once and get the `/docs-init` slash command plus the `docs-init` skill in every project:
 
-   ```markdown
-   ## Project Docs
-   If a project contains a `.claude/project-docs.md` file, follow it.
-   To set this up, run the `docs-init` skill (or `npx degit <OWNER>/project-docs .project-docs`
-   then `cd .project-docs && npm install && npm run setup`).
+   ```text
+   /plugin marketplace add ledminh/project-docs
+   /plugin install project-docs@ledminh
    ```
+
+   Then in any project just run `/docs-init` (or say *"set up project docs here"*). To update later:
+   `/plugin marketplace update` then reinstall.
+
+2. **Manual skill install.** Copy just the skill to your user skills dir:
+   `npx degit ledminh/project-docs/skills/docs-init ~/.claude/skills/docs-init`.
+
+3. **No Claude at all.** Plain one-liner in any project:
+   `npx degit ledminh/project-docs .project-docs && cd .project-docs && npm install && npm run setup`.
+
+Optionally add to `~/.claude/CLAUDE.md` so Claude Code recognizes the convention everywhere:
+
+```markdown
+## Project Docs
+If a project contains a `.claude/project-docs.md` file, follow it.
+To set this up, run the `/docs-init` command (or the `docs-init` skill).
+```
 
 ## Claude Code integration contract
 
