@@ -3,13 +3,14 @@
 // Host root resolution order:
 //   1. PROJECT_ROOT env var (absolute path) — always wins.
 //   2. Default: the project that contains this app. The app is installed at
-//      <project>/.project-docs/app/, so the default root is the parent of `.project-docs`.
-//      (Also supports a bare <project>/project-docs/ layout: parent of the app folder.)
+//      <project>/.project-docs/, so the default root is the parent of `.project-docs`.
+//      (Also tolerates a nested .project-docs/app/ or a bare project-docs/ layout.)
 const path = require('path');
 const fs = require('fs');
 
-const APP_DIR = path.resolve(__dirname, '..');   // .../.project-docs/app  (or .../project-docs)
+const APP_DIR = path.resolve(__dirname, '..');   // .../.project-docs  (the app package root)
 let defaultRoot = path.dirname(APP_DIR);
+// If the app sits one level deeper (e.g. .project-docs/app), climb out of the .project-docs wrapper.
 if (path.basename(defaultRoot) === '.project-docs') defaultRoot = path.dirname(defaultRoot);
 const ROOT = path.resolve(process.env.PROJECT_ROOT || defaultRoot);
 

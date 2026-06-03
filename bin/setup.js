@@ -5,7 +5,7 @@
 //   - writes the .claude/project-docs.md integration contract (refreshed each run)
 //   - wires an @import into the project's root CLAUDE.md (added once)
 //
-// The app code lives in .project-docs/app/ (entirely gitignored); the contract lives in
+// The app code lives in .project-docs/ (entirely gitignored); the contract lives in
 // .claude/ (tracked) so no single folder mixes tracked + ignored content.
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +17,7 @@ const END = '<!-- project-docs:end -->';
 
 const CONTRACT = `# Project Docs — conventions for Claude Code
 
-This project uses the **Project Docs** app (in \`.project-docs/app\`). It surfaces four views backed
+This project uses the **Project Docs** app (in \`.project-docs/\`). It surfaces four views backed
 by plain files in this project. Follow these conventions whenever you work here.
 
 ## Files you read and write
@@ -90,7 +90,7 @@ function main() {
   console.log('  contract          : ' + rel(contractPath) + (wroteContract ? ' (written)' : ' (unchanged)'));
   console.log('  root CLAUDE.md    : ' + rootStatus);
   console.log('');
-  console.log('Run it:  cd .project-docs/app && npm install && npm start   →  http://localhost:4500');
+  console.log('Run it:  cd .project-docs && npm install && npm start   →  http://localhost:4500');
 }
 
 main();
