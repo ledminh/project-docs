@@ -1,0 +1,7 @@
+node_modules/
+
+# The app is a generic tool — project content/state must never live inside it.
+# These only appear if you accidentally run with the root pointing at the app folder.
+/docs/
+/tasks/
+/.project-docs/

@@ -1,0 +1,17 @@
+{
+  "name": "project-docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local, per-project documentation + task app (Workflow / Diagram / Architecture / Tickets)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "setup": "node bin/setup.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "express": "^4.19.0"
+  },
+  "engines": { "node": ">=20" }
+}
