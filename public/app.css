@@ -86,7 +86,53 @@ body {
 #arch-toc a:hover { color: var(--green); border-left-color: var(--green); }
 #arch-toc a.toc-h1 { font-weight: 700; color: var(--ink); }
 #arch-toc a.toc-h3 { padding-left: 24px; }
-.doc-viewer { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 32px; }
+.doc-viewer { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 28px 44px; box-shadow: 0 1px 3px rgba(15,35,59,.04); }
+
+/* ── Rich document content (shared by the Architecture viewer & Workflow editor) ── */
+.toastui-editor-contents {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px; line-height: 1.7; color: #25303f;
+}
+.toastui-editor-contents h1,
+.toastui-editor-contents h2,
+.toastui-editor-contents h3,
+.toastui-editor-contents h4 { color: var(--green-ink); font-weight: 800; line-height: 1.3; scroll-margin-top: calc(var(--nav-h) + 20px); border: 0; }
+.toastui-editor-contents h1 { font-size: 28px; margin: 4px 0 18px; }
+.toastui-editor-contents h2 { font-size: 21px; font-weight: 700; margin: 38px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--green-soft); }
+.toastui-editor-contents h3 { font-size: 16.5px; font-weight: 700; color: var(--ink); margin: 26px 0 10px; }
+.toastui-editor-contents h4 { font-size: 15px; color: var(--muted); margin: 20px 0 8px; }
+.toastui-editor-contents p { margin: 0 0 14px; }
+.toastui-editor-contents ul,
+.toastui-editor-contents ol { margin: 0 0 14px; padding-left: 26px; }
+.toastui-editor-contents li { margin: 5px 0; }
+.toastui-editor-contents li::marker { color: var(--green); }
+.toastui-editor-contents a { color: var(--green); text-decoration: none; border-bottom: 1px solid transparent; }
+.toastui-editor-contents a:hover { border-bottom-color: var(--green); }
+.toastui-editor-contents strong { color: var(--green-ink); }
+.toastui-editor-contents code { background: #eef2f5; color: #0b4f3f; padding: 1.5px 6px; border-radius: 5px; font-size: .88em; font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; }
+.toastui-editor-contents pre { background: #f6f8fa; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow: auto; margin: 0 0 16px; }
+.toastui-editor-contents pre code { background: none; padding: 0; color: #1a2433; font-size: 13px; line-height: 1.55; }
+.toastui-editor-contents blockquote { margin: 0 0 16px; padding: 4px 16px; border-left: 4px solid var(--green); background: #f3faf7; color: var(--muted); border-radius: 0 6px 6px 0; }
+.toastui-editor-contents hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+
+/* Tables — styled like the source docs */
+.toastui-editor-contents table { width: 100%; border-collapse: collapse; margin: 4px 0 20px; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.toastui-editor-contents thead th { background: var(--green-soft); color: var(--green-ink); font-weight: 700; text-align: left; }
+.toastui-editor-contents th,
+.toastui-editor-contents td { border: 1px solid var(--line); padding: 8px 12px; vertical-align: top; }
+.toastui-editor-contents tbody tr:nth-child(even) { background: #fafbfc; }
+.toastui-editor-contents tbody tr:hover { background: #f3faf7; }
+
+/* Status badges injected into architecture tables */
+.badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .02em; text-transform: capitalize; }
+.badge-built   { background: #dcfce7; color: #166534; }
+.badge-scaffold{ background: #e2e8f0; color: #475569; }
+.badge-planned { background: #f1f5f9; color: #64748b; }
+.badge-partial { background: #fef9c3; color: #854d0e; }
+
+/* Rendered mermaid diagrams inside the Architecture doc */
+.mermaid-figure { margin: 8px 0 24px; padding: 20px; background: #fbfdfc; border: 1px solid var(--line); border-radius: 10px; text-align: center; overflow: auto; }
+.mermaid-figure svg { max-width: 100%; height: auto; }
 
 /* ── Diagram ─────────────────────────────────────────────────────────────────*/
 .diagram-render { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; overflow: auto; text-align: center; }

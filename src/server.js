@@ -77,7 +77,8 @@ app.get('/architecture', (_req, res) => {
       <div id="viewer" class="doc-viewer"></div>
     </div>
   </section>`;
-  res.send(shell({ viewLabel: 'Architecture', active: 'architecture', content, pd: { view: 'architecture', docName: 'architecture' } }));
+  const headExtra = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>`;
+  res.send(shell({ viewLabel: 'Architecture', active: 'architecture', content, pd: { view: 'architecture', docName: 'architecture' }, headExtra }));
 });
 
 // Diagram — read-only Mermaid render of docs/diagram.mmd (not seeded).

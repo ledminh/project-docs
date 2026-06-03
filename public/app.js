@@ -146,7 +146,11 @@
     try { d = await api('GET', '/api/doc/architecture'); } catch (_) {}
     if (!d.exists || !d.content.trim()) { empty.hidden = false; viewerEl.hidden = true; return; }
     toastui.Editor.factory({ el: viewerEl, viewer: true, initialValue: d.content });
-    requestAnimationFrame(() => buildToc(viewerEl));
+    requestAnimationFrame(() => {
+      buildToc(viewerEl);
+      renderArchMermaid(viewerEl);
+      badgeStatuses(viewerEl);
+    });
   }
   function buildToc(viewerEl) {
     const toc = document.getElementById('arch-toc');
@@ -159,6 +163,40 @@
       html += `<a class="toc-${h.tagName.toLowerCase()}" href="#${id}">${esc(h.textContent)}</a>`;
     });
     toc.innerHTML = html;
+  }
+  // Turn ```mermaid code blocks rendered by the viewer into actual SVG diagrams.
+  async function renderArchMermaid(root) {
+    if (typeof mermaid === 'undefined') return;
+    const isMermaid = (c) =>
+      /(?:^|\s)lang(?:uage)?-mermaid(?:\s|$)/.test(c.className) ||
+      /^\s*(?:flowchart|graph|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|mindmap|gitGraph)\b/.test(c.textContent);
+    const blocks = [...root.querySelectorAll('pre code')].filter(isMermaid);
+    if (!blocks.length) return;
+    mermaid.initialize({
+      startOnLoad: false, theme: 'base', securityLevel: 'loose',
+      themeVariables: { primaryColor: '#d7f0e3', primaryTextColor: '#0c3b2c', primaryBorderColor: '#1f8a70', lineColor: '#1f8a70', fontSize: '14px' },
+      flowchart: { curve: 'basis', useMaxWidth: true }, sequence: { useMaxWidth: true }, er: { useMaxWidth: true },
+    });
+    let i = 0;
+    for (const code of blocks) {
+      const pre = code.closest('pre');
+      try {
+        const { svg } = await mermaid.render('arch-mmd-' + (i++), code.textContent.trim());
+        const fig = document.createElement('figure');
+        fig.className = 'mermaid-figure';
+        fig.innerHTML = svg;
+        pre.replaceWith(fig);
+      } catch (_) { /* leave as code on parse error */ }
+    }
+  }
+  // Color-code status words (built / scaffold / planned …) in tables, like the original legend.
+  function badgeStatuses(root) {
+    const map = { built: 'built', working: 'built', done: 'built', scaffold: 'scaffold', scaffolded: 'scaffold', planned: 'planned', 'not wired': 'planned', partial: 'partial', wip: 'partial' };
+    root.querySelectorAll('td').forEach((el) => {
+      if (el.children.length) return;
+      const key = el.textContent.trim().toLowerCase();
+      if (map[key]) el.innerHTML = `<span class="badge badge-${map[key]}">${esc(el.textContent.trim())}</span>`;
+    });
   }
 
   // ── Diagram (read-only Mermaid) ──────────────────────────────────────────────
