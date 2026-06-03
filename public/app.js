@@ -148,9 +148,43 @@
     toastui.Editor.factory({ el: viewerEl, viewer: true, initialValue: d.content });
     requestAnimationFrame(() => {
       buildToc(viewerEl);
+      setupTocSpy(viewerEl);
       renderArchMermaid(viewerEl);
       badgeStatuses(viewerEl);
     });
+  }
+  // Highlight the TOC entry whose section is currently near the top of the viewport.
+  function setupTocSpy(root) {
+    const links = new Map();
+    document.querySelectorAll('#arch-toc a').forEach(a => links.set(a.getAttribute('href').slice(1), a));
+    const heads = [...root.querySelectorAll('h1, h2, h3')];
+    if (!heads.length || !links.size) return;
+    const tocEl = document.querySelector('.doc-layout .toc');
+    const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 48;
+    const visible = new Set();
+    let activeId = null;
+    function setActive(id) {
+      if (id === activeId) return;
+      activeId = id;
+      links.forEach(a => a.classList.remove('active'));
+      const a = links.get(id);
+      if (!a) return;
+      a.classList.add('active');
+      if (tocEl) {
+        const ar = a.getBoundingClientRect(), tr = tocEl.getBoundingClientRect();
+        if (ar.top < tr.top || ar.bottom > tr.bottom) a.scrollIntoView({ block: 'nearest' });
+      }
+    }
+    const obs = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) visible.add(e.target); else visible.delete(e.target);
+      }
+      if (visible.size) {
+        const top = [...visible].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0];
+        setActive(top.id);
+      }
+    }, { rootMargin: `-${navH + 8}px 0px -65% 0px`, threshold: 0 });
+    heads.forEach(h => obs.observe(h));
   }
   function buildToc(viewerEl) {
     const toc = document.getElementById('arch-toc');
