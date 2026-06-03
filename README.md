@@ -1,11 +1,12 @@
 # Project Docs
 
-Local, per-project documentation + task app. All four views are built:
+Local, per-project documentation + task app. Five views:
 
 - **Workflow** — WYSIWYG markdown editor, saved to `docs/workflow.md` (editable by you).
 - **Diagram** — read-only Mermaid render of `docs/diagram.mmd` (Claude Code writes it; empty until generated).
 - **Architecture** — read-only render of `docs/architecture.md` with an auto-generated table of contents (Claude Code writes it).
 - **Tickets** — card grid + detail modal over `tasks/*.md`. Each ticket carries a WYSIWYG instruction body; a Todo panel (multi-line, auto-expanding) sits alongside, and todos can be promoted to tickets.
+- **Reports** — read-only index + reader over `docs/reports/*.md`: long-form work reports written by AIs when they finish a task (what/why/dataflow, mermaid supported).
 
 Content is **files-first** — everything lives in the host project as plain text (no database):
 
@@ -16,6 +17,7 @@ Content is **files-first** — everything lives in the host project as plain tex
 <project>/docs/diagram.mmd       # read-only in UI; Claude Code edits
 <project>/tasks/*.md             # ticket / implementation inbox
 <project>/tasks/_todos.md        # the Todo list (the "_" keeps it out of the ticket grid)
+<project>/docs/reports/*.md      # AI work reports (read-only in UI; AIs write them)
 <project>/.project-docs/         # the installed app code (its own repo; entirely gitignored)
 <project>/.claude/project-docs.md # the Claude Code integration contract (tracked)
 ```

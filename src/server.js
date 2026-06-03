@@ -8,6 +8,7 @@ const { readDoc } = require('./files');
 const docsRouter = require('./routes/docs');
 const todosRouter = require('./routes/todos');
 const ticketsRouter = require('./routes/tickets');
+const reportsRouter = require('./routes/reports');
 
 ensureDirs();
 
@@ -21,6 +22,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/doc', docsRouter);
 app.use('/api/todos', todosRouter);
 app.use('/api/tickets', ticketsRouter);
+app.use('/api/reports', reportsRouter);
 
 // ── Config API ───────────────────────────────────────────────────────────────
 app.get('/api/config', (_req, res) => {
@@ -28,7 +30,7 @@ app.get('/api/config', (_req, res) => {
 });
 
 // ── Views ─────────────────────────────────────────────────────────────────────
-const VIEWS = ['workflow', 'diagram', 'architecture', 'tickets'];
+const VIEWS = ['workflow', 'diagram', 'architecture', 'tickets', 'reports'];
 function title() { return TITLE; }
 
 // Landing: empty-state idea capture until workflow.md exists, then Workflow.
@@ -141,6 +143,35 @@ app.get('/tickets', (_req, res) => {
     </div>
   </div>`;
   res.send(shell({ viewLabel: 'Tickets', active: 'tickets', content, pd: { view: 'tickets' } }));
+});
+
+// Reports — read-only index + reader over docs/reports/*.md (AI work reports).
+app.get('/reports', (_req, res) => {
+  const content = `
+  <section class="reports-view" data-view="reports">
+    <header class="view-head">
+      <h1>Reports</h1>
+      <p class="view-hint">Work reports written when a task is finished — what was done, the reasoning, and how the data flows. Read-only; files live in <code>docs/reports/</code>.</p>
+    </header>
+    <div id="reports-empty" class="empty-state" hidden>
+      <p><strong>No reports yet.</strong></p>
+      <p>When Claude Code (or any AI) finishes a piece of work, it writes a report to <code>docs/reports/YYYY-MM-DD-&lt;slug&gt;.md</code>.</p>
+    </div>
+    <div id="reports-index" class="reports-index"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="doc-layout" id="report-reader" hidden>
+    <aside class="toc"><div class="toc-label">In this report</div><nav id="arch-toc"></nav></aside>
+    <div class="doc-main">
+      <header class="view-head report-head">
+        <a href="/reports" class="btn-ghost report-back">← All reports</a>
+        <div id="report-meta"></div>
+      </header>
+      <div id="viewer" class="doc-viewer"></div>
+    </div>
+  </section>`;
+  const headExtra = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>`;
+  res.send(shell({ viewLabel: 'Reports', active: 'reports', content, pd: { view: 'reports' }, headExtra }));
 });
 
 // ── Page assembly ───────────────────────────────────────────────────────────

@@ -44,6 +44,7 @@
   else if (view === 'architecture') initArchitecture();
   else if (view === 'diagram') initDiagram();
   else if (view === 'tickets') initTickets();
+  else if (view === 'reports') initReports();
 
   // ── Right panel ──────────────────────────────────────────────────────────────
   function initRightPanel() {
@@ -160,11 +161,14 @@
     let d = { exists: false, content: '' };
     try { d = await api('GET', '/api/doc/architecture'); } catch (_) {}
     if (!d.exists || !d.content.trim()) { empty.hidden = false; viewerEl.hidden = true; return; }
-    // arm reveal-on-scroll before the content renders (so it starts hidden, then settles in)
+    renderDoc(viewerEl, d.content);
+  }
+  // Shared read-only document renderer: TOC, scroll-spy, anchors, mermaid, badges, reveal.
+  function renderDoc(viewerEl, markdown) {
     const docEl = viewerEl.closest('.doc-viewer');
     const animate = docEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (animate) docEl.classList.add('reveal-on');
-    toastui.Editor.factory({ el: viewerEl, viewer: true, initialValue: d.content });
+    toastui.Editor.factory({ el: viewerEl, viewer: true, initialValue: markdown });
     requestAnimationFrame(async () => {
       buildToc(viewerEl);
       addHeadingAnchors(viewerEl);
@@ -173,6 +177,50 @@
       await renderArchMermaid(viewerEl);
       if (animate) setupReveal(viewerEl);
     });
+  }
+
+  // ── Reports (read-only index + reader over docs/reports/) ────────────────────
+  function initReports() {
+    const file = new URLSearchParams(location.search).get('r');
+    if (file) { openReport(file); return; }
+    loadIndex();
+
+    async function loadIndex() {
+      let items = [];
+      try { items = await api('GET', '/api/reports'); } catch (_) {}
+      const grid = document.getElementById('reports-index');
+      if (!items.length) {
+        grid.innerHTML = '';
+        document.getElementById('reports-empty').hidden = false;
+        return;
+      }
+      grid.innerHTML = items.map(t => `
+        <a class="report-card" href="/reports?r=${encodeURIComponent(t.file)}">
+          <div class="report-card-top">
+            <span class="report-title">${esc(t.title)}</span>
+            ${t.ticket ? `<span class="status-chip status-open">ticket ${esc(t.ticket)}</span>` : ''}
+          </div>
+          <div class="report-summary">${esc(t.summary)}</div>
+          <div class="report-meta-row"><span>${esc(t.date)}</span>${t.author ? `<span>· ${esc(t.author)}</span>` : ''}</div>
+        </a>`).join('');
+    }
+
+    async function openReport(name) {
+      document.querySelector('.reports-view').hidden = true;
+      document.getElementById('report-reader').hidden = false;
+      const viewerEl = document.getElementById('viewer');
+      let d = null;
+      try { d = await api('GET', '/api/reports/' + encodeURIComponent(name)); } catch (_) {}
+      if (!d) {
+        document.getElementById('report-meta').innerHTML = '<h1 class="report-title-big">Report not found</h1>';
+        return;
+      }
+      document.title = d.title + ' — Reports';
+      document.getElementById('report-meta').innerHTML = `
+        <h1 class="report-title-big">${esc(d.title)}</h1>
+        <p class="view-hint">${esc(d.date)}${d.author ? ' · ' + esc(d.author) : ''}${d.ticket ? ' · ticket ' + esc(d.ticket) : ''}</p>`;
+      renderDoc(viewerEl, d.body);
+    }
   }
   // Hover-to-copy "#" anchors on section headings.
   function addHeadingAnchors(root) {

@@ -17,7 +17,7 @@ const END = '<!-- project-docs:end -->';
 
 const CONTRACT = `# Project Docs — conventions for Claude Code
 
-This project uses the **Project Docs** app (in \`.project-docs/\`). It surfaces four views backed
+This project uses the **Project Docs** app (in \`.project-docs/\`). It surfaces five views backed
 by plain files in this project. Follow these conventions whenever you work here.
 
 ## Files you read and write
@@ -27,6 +27,7 @@ by plain files in this project. Follow these conventions whenever you work here.
 - \`docs/architecture.md\` — current architecture. **Read-only in the UI — you maintain this file.**
 - \`docs/diagram.mmd\` — a Mermaid diagram of the system. **Read-only in the UI — you maintain this file.**
   Absent until you create it.
+- \`docs/reports/\` — your work reports, one file each. **Read-only in the UI — you write these.** See below.
 
 ## Populating views
 
@@ -52,8 +53,33 @@ Never delete task files.
 \`tasks/_todos.md\` is the user's lightweight scratch todo list (the leading \`_\` keeps it out of the
 ticket grid). It is not a ticket — don't implement it directly; the user promotes todos into tickets.
 
-There is no database. Everything is plain text in \`docs/\` and \`tasks/\`. \`.project-docs/\` holds only
-this contract.
+## Work reports — \`docs/reports/\`
+
+**Whenever you finish a piece of work — a ticket OR an ad-hoc request — write a report** to
+\`docs/reports/YYYY-MM-DD-<slug>.md\` before considering the work done. Frontmatter:
+
+\`\`\`
+---
+title: "Short descriptive title"
+date: "YYYY-MM-DD"
+author: "Claude Code"
+ticket: "0007"        # only if the work came from a tasks/ ticket
+summary: "One sentence on what was done."
+---
+\`\`\`
+
+The body is **long-form and educational** — the user reads reports to understand the codebase and
+to practice reading. Structure it with \`##\` sections covering:
+
+1. **What I did** — the changes, files touched, features added.
+2. **Why** — your reasoning, alternatives considered, trade-offs.
+3. **How the data flows** — walk through the runtime path of the code you wrote or changed,
+   step by step. Include Mermaid diagrams where they help (they render in the app).
+
+Write thoroughly; length is welcome. Never delete or rewrite existing reports — add new ones.
+
+There is no database. Everything is plain text in \`docs/\` and \`tasks/\`. The app code lives in
+\`.project-docs/\` (gitignored); this contract lives in \`.claude/project-docs.md\` (tracked).
 `;
 
 function writeIfChanged(file, content) {
