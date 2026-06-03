@@ -162,8 +162,48 @@ body {
 .badge-partial { background: #fef9c3; color: #854d0e; }
 
 /* Rendered mermaid diagrams inside the Architecture doc */
-.mermaid-figure { margin: 14px 0 28px; padding: 24px; background: #fbfdfc; border: 1px solid #e8ebef; border-radius: 12px; text-align: center; overflow: auto; box-shadow: 0 1px 2px rgba(15,35,59,.04); }
+.mermaid-figure { margin: 14px 0 28px; padding: 24px; background: #fbfdfc; border: 1px solid #e8ebef; border-radius: 12px; text-align: center; overflow: auto; box-shadow: 0 1px 2px rgba(15,35,59,.04); transition: box-shadow .18s ease, transform .18s ease; }
 .mermaid-figure svg { max-width: 100%; height: auto; }
+.mermaid-figure:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(15,35,59,.10); }
+
+/* ── Engagement layer: reading bar, smooth scroll, reveal motion, anchors ─────── */
+html { scroll-behavior: smooth; }
+
+#read-progress {
+  position: fixed; top: var(--nav-h); left: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, var(--green), #34d399);
+  z-index: 350; border-radius: 0 3px 3px 0; transition: width .08s linear;
+  box-shadow: 0 1px 3px rgba(31,138,112,.4);
+}
+
+/* hover-to-copy section anchors */
+.toastui-editor-contents h2, .toastui-editor-contents h3 { position: relative; }
+.head-anchor {
+  position: absolute; left: -1.05em; top: .12em; opacity: 0;
+  color: var(--green); font-weight: 700; text-decoration: none;
+  transition: opacity .12s; padding-right: .25em;
+}
+.toastui-editor-contents h2:hover .head-anchor,
+.toastui-editor-contents h3:hover .head-anchor { opacity: .45; }
+.head-anchor:hover { opacity: 1 !important; }
+
+/* callout marker on blockquotes */
+.toastui-editor-contents blockquote::before {
+  content: "“"; position: absolute; left: 8px; top: -6px;
+  font-size: 30px; line-height: 1; color: var(--green); opacity: .35; font-family: Georgia, serif;
+}
+.toastui-editor-contents blockquote { position: relative; padding-left: 28px; }
+
+/* gentle reveal-on-scroll (architecture viewer; only when motion is allowed) */
+@media (prefers-reduced-motion: no-preference) {
+  .doc-viewer.reveal-on .toastui-editor-contents > * {
+    opacity: 0; transform: translateY(12px);
+    transition: opacity .5s ease, transform .5s cubic-bezier(.22,.61,.36,1);
+  }
+  .doc-viewer.reveal-on .toastui-editor-contents > .revealed {
+    opacity: 1; transform: none;
+  }
+}
 
 /* ── Diagram ─────────────────────────────────────────────────────────────────*/
 .diagram-render { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; overflow: auto; text-align: center; }

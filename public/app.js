@@ -23,6 +23,21 @@
 
   // global right panel (Todo + Tickets) — on every view -------------------------
   initRightPanel();
+  initReadingProgress();
+
+  // Thin progress bar under the nav that fills as you scroll.
+  function initReadingProgress() {
+    const bar = document.getElementById('read-progress');
+    if (!bar) return;
+    const update = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+    update();
+  }
 
   // per-view --------------------------------------------------------------------
   if (view === 'idea' || view === 'workflow') initEditor();
@@ -145,13 +160,46 @@
     let d = { exists: false, content: '' };
     try { d = await api('GET', '/api/doc/architecture'); } catch (_) {}
     if (!d.exists || !d.content.trim()) { empty.hidden = false; viewerEl.hidden = true; return; }
+    // arm reveal-on-scroll before the content renders (so it starts hidden, then settles in)
+    const docEl = viewerEl.closest('.doc-viewer');
+    const animate = docEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (animate) docEl.classList.add('reveal-on');
     toastui.Editor.factory({ el: viewerEl, viewer: true, initialValue: d.content });
-    requestAnimationFrame(() => {
+    requestAnimationFrame(async () => {
       buildToc(viewerEl);
+      addHeadingAnchors(viewerEl);
       setupTocSpy(viewerEl);
-      renderArchMermaid(viewerEl);
       badgeStatuses(viewerEl);
+      await renderArchMermaid(viewerEl);
+      if (animate) setupReveal(viewerEl);
     });
+  }
+  // Hover-to-copy "#" anchors on section headings.
+  function addHeadingAnchors(root) {
+    root.querySelectorAll('h2[id], h3[id]').forEach((h) => {
+      const a = document.createElement('a');
+      a.className = 'head-anchor'; a.href = '#' + h.id; a.textContent = '#';
+      a.title = 'Copy link to this section';
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        history.replaceState(null, '', '#' + h.id);
+        if (navigator.clipboard) navigator.clipboard.writeText(location.href).catch(() => {});
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      h.prepend(a);
+    });
+  }
+  // Gentle fade-and-rise as blocks scroll into view (only when motion is allowed).
+  function setupReveal(viewerEl) {
+    const contents = viewerEl.querySelector('.toastui-editor-contents') || viewerEl;
+    const items = [...contents.children];
+    if (!items.length) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('revealed'); obs.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0 });
+    items.forEach((el) => obs.observe(el));
+    // safety net: never leave content hidden, even if observation misfires
+    setTimeout(() => items.forEach((el) => el.classList.add('revealed')), 2500);
   }
   // Highlight the TOC entry whose section is currently near the top of the viewport.
   function setupTocSpy(root) {
@@ -217,7 +265,7 @@
       try {
         const { svg } = await mermaid.render('arch-mmd-' + (i++), code.textContent.trim());
         const fig = document.createElement('figure');
-        fig.className = 'mermaid-figure';
+        fig.className = 'mermaid-figure revealed';   // already visible; never gets stuck hidden by reveal
         fig.innerHTML = svg;
         pre.replaceWith(fig);
       } catch (_) { /* leave as code on parse error */ }
