@@ -1,22 +1,23 @@
 #!/usr/bin/env node
 // project-docs/bin/setup.js
 // Idempotent scaffold: prepares the HOST PROJECT to use the Project Docs app.
-//   - creates docs/, tasks/, .project-docs/ in the project root
-//   - writes the .project-docs/CLAUDE.md integration contract (refreshed each run)
+//   - creates docs/ and tasks/ in the project root
+//   - writes the .claude/project-docs.md integration contract (refreshed each run)
 //   - wires an @import into the project's root CLAUDE.md (added once)
 //
-// Host root = PROJECT_ROOT env var, else the parent of this app folder (see src/paths.js).
+// The app code lives in .project-docs/app/ (entirely gitignored); the contract lives in
+// .claude/ (tracked) so no single folder mixes tracked + ignored content.
 const fs = require('fs');
 const path = require('path');
-const { ROOT, DOCS_DIR, TASKS_DIR, STATE_DIR, ensureDirs } = require('../src/paths');
+const { ROOT, DOCS_DIR, TASKS_DIR, CLAUDE_DIR, ensureDirs } = require('../src/paths');
 
-const IMPORT_LINE = '@.project-docs/CLAUDE.md';
+const IMPORT_LINE = '@.claude/project-docs.md';
 const BEGIN = '<!-- project-docs:begin -->';
 const END = '<!-- project-docs:end -->';
 
 const CONTRACT = `# Project Docs — conventions for Claude Code
 
-This project uses the **Project Docs** app (in \`./project-docs\`). It surfaces four views backed
+This project uses the **Project Docs** app (in \`.project-docs/app\`). It surfaces four views backed
 by plain files in this project. Follow these conventions whenever you work here.
 
 ## Files you read and write
@@ -76,7 +77,8 @@ function wireRootClaudeMd() {
 
 function main() {
   ensureDirs();
-  const contractPath = path.join(STATE_DIR, 'CLAUDE.md');
+  if (!fs.existsSync(CLAUDE_DIR)) fs.mkdirSync(CLAUDE_DIR, { recursive: true });
+  const contractPath = path.join(CLAUDE_DIR, 'project-docs.md');
   const wroteContract = writeIfChanged(contractPath, CONTRACT);
   const rootStatus = wireRootClaudeMd();
 
@@ -88,7 +90,7 @@ function main() {
   console.log('  contract          : ' + rel(contractPath) + (wroteContract ? ' (written)' : ' (unchanged)'));
   console.log('  root CLAUDE.md    : ' + rootStatus);
   console.log('');
-  console.log('Run it:  cd project-docs && npm install && npm start   →  http://localhost:4500');
+  console.log('Run it:  cd .project-docs/app && npm install && npm start   →  http://localhost:4500');
 }
 
 main();

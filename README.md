@@ -16,8 +16,13 @@ Content is **files-first** — everything lives in the host project as plain tex
 <project>/docs/diagram.mmd       # read-only in UI; Claude Code edits
 <project>/tasks/*.md             # ticket / implementation inbox
 <project>/tasks/_todos.md        # the Todo list (the "_" keeps it out of the ticket grid)
-<project>/.project-docs/CLAUDE.md # the Claude Code integration contract
+<project>/.project-docs/app/     # the installed app code (its own repo; entirely gitignored)
+<project>/.claude/project-docs.md # the Claude Code integration contract (tracked)
 ```
+
+`.project-docs/` is the installed tool and is fully gitignored — one folder, one purpose. The
+contract lives in `.claude/project-docs.md` (with your other Claude config), so no folder mixes
+tracked and ignored content. The visible project tree stays clean — your code plus `docs/` and `tasks/`.
 
 Title defaults to the project folder name (override with `DOCS_TITLE`); port defaults to `4500`
 (override with `PORT`). There is no database — everything is committable text.
@@ -25,17 +30,16 @@ Title defaults to the project folder name (override with `DOCS_TITLE`); port def
 ## Run
 
 ```bash
-cd project-docs
+cd .project-docs/app
 npm install
-PROJECT_ROOT=/absolute/path/to/your/project npm start
-# → http://localhost:4500
+npm start            # → http://localhost:4500
 ```
 
 `PROJECT_ROOT` is where `docs/` and `tasks/` are read and written. If omitted, it defaults to the
-**parent of the `project-docs` folder** — i.e. the project the app is installed inside. So when the
-app lives at `<project>/project-docs/`, running `cd project-docs && npm start` uses `<project>/` as
-the root. Set `PROJECT_ROOT=/abs/path` to point it anywhere else (e.g. a throwaway folder for testing).
-Port defaults to `4500` (override with `PORT`).
+**folder that contains `.project-docs/`** — i.e. the project the app is installed inside. So when the
+app lives at `<project>/.project-docs/app/`, running `cd .project-docs/app && npm start` uses
+`<project>/` as the root. Set `PROJECT_ROOT=/abs/path` to point it anywhere else (e.g. a throwaway
+folder for testing). Port defaults to `4500` (override with `PORT`).
 
 ## Behaviour
 
@@ -48,17 +52,17 @@ Port defaults to `4500` (override with `PORT`).
 `npm run setup` prepares the surrounding project (idempotent — safe to run repeatedly):
 
 ```bash
-cd project-docs
+cd .project-docs/app
 npm install
-npm run setup      # creates docs/, tasks/, .project-docs/CLAUDE.md; wires root CLAUDE.md
+npm run setup      # creates docs/, tasks/, .claude/project-docs.md; wires root CLAUDE.md
 npm start          # → http://localhost:4500
 ```
 
-It resolves the **project root as the parent of `project-docs/`**. To target elsewhere:
+It resolves the **project root as the folder containing `.project-docs/`**. To target elsewhere:
 `PROJECT_ROOT=/abs/path npm run setup`.
 
-What it does: creates `docs/` and `tasks/`, writes the `.project-docs/CLAUDE.md` integration
-contract, and adds an `@.project-docs/CLAUDE.md` import to the project's root `CLAUDE.md`
+What it does: creates `docs/` and `tasks/`, writes the `.claude/project-docs.md` integration
+contract, and adds an `@.claude/project-docs.md` import to the project's root `CLAUDE.md`
 (creating that file if absent, appending once if present).
 
 ## Reuse on every project
@@ -66,7 +70,7 @@ contract, and adds an `@.project-docs/CLAUDE.md` import to the project's root `C
 Three layers, cheapest first:
 
 1. **GitHub template repo.** Push this folder to a repo named `project-docs` and mark it a template.
-   Then in any project: `npx degit <OWNER>/project-docs project-docs && cd project-docs && npm install && npm run setup`.
+   Then in any project: `npx degit <OWNER>/project-docs .project-docs/app && cd .project-docs/app && npm install && npm run setup`.
 2. **Claude Code skill.** `skills/docs-init/` is a ready skill — copy it into your Claude Code
    skills directory (or bundle it in a plugin). Then just tell Claude Code *"set up project docs here"*
    and it runs the scaffold. Set `PROJECT_DOCS_SRC` to a local clone path, or edit the repo `<OWNER>`
@@ -75,14 +79,14 @@ Three layers, cheapest first:
 
    ```markdown
    ## Project Docs
-   If a project contains a `.project-docs/` folder, follow `.project-docs/CLAUDE.md`.
-   To create one, run the `docs-init` skill (or `npx degit <OWNER>/project-docs project-docs`
-   then `cd project-docs && npm install && npm run setup`).
+   If a project contains a `.claude/project-docs.md` file, follow it.
+   To set this up, run the `docs-init` skill (or `npx degit <OWNER>/project-docs .project-docs/app`
+   then `cd .project-docs/app && npm install && npm run setup`).
    ```
 
 ## Claude Code integration contract
 
-After setup, `.project-docs/CLAUDE.md` tells Claude Code: which files map to which views, that
+After setup, `.claude/project-docs.md` tells Claude Code: which files map to which views, that
 `docs/architecture.md` + `docs/diagram.mmd` are read-only in the UI (Claude maintains them), and
 that `tasks/*.md` is the implementation inbox — "work the tickets" means implement every task whose
 `status` is not `done`, check off steps, and flip `status: done`.
