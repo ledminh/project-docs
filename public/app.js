@@ -21,9 +21,63 @@
     return data;
   }
 
-  // global right panel (Todo + Tickets) — on every view -------------------------
-  initRightPanel();
+  // global bits ------------------------------------------------------------------
+  initComposer();
   initReadingProgress();
+
+  // per-view ----------------------------------------------------------------------
+  if (view === 'idea' || view === 'workflow') initEditor();
+  else if (view === 'architecture') initArchitecture();
+  else if (view === 'diagram') initDiagram();
+  else if (view === 'requests' || view === 'plans' || view === 'reports') initCollection();
+
+  // ── Request composer (global, wide slide-in panel) ───────────────────────────
+  function initComposer() {
+    const panel = document.getElementById('composer');
+    if (!panel) return;
+    const openBtn = document.getElementById('composer-open');
+    const statusEl = document.getElementById('composer-status');
+    let editor = null;
+
+    openBtn.addEventListener('click', () => {
+      document.body.classList.add('composer-open');
+      if (!editor) {
+        editor = new toastui.Editor({
+          el: document.getElementById('composer-editor'),
+          height: '100%', initialEditType: 'wysiwyg', previewStyle: 'tab',
+          placeholder: 'What do you want built or changed? Brainstorm freely…',
+          usageStatistics: false,
+        });
+      }
+      setTimeout(() => editor.focus(), 60);
+    });
+    document.getElementById('composer-close').addEventListener('click', () =>
+      document.body.classList.remove('composer-open'));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('composer-open')) {
+        document.body.classList.remove('composer-open');
+      }
+    });
+
+    document.getElementById('composer-save').addEventListener('click', async () => {
+      if (!editor) return;
+      const content = editor.getMarkdown().trim();
+      if (!content) { msg('Nothing to save yet.', true); return; }
+      msg('Saving…');
+      try {
+        const created = await api('POST', '/api/requests', { content });
+        msg('Saved as docs/requests/' + created.file);
+        editor.setMarkdown('');
+        if (view === 'requests' && window.__reloadCollection) window.__reloadCollection();
+      } catch (e) { msg('Error: ' + e.message, true); }
+    });
+
+    function msg(m, err) {
+      statusEl.textContent = m;
+      statusEl.classList.toggle('is-error', !!err);
+      if (!err) setTimeout(() => { statusEl.textContent = ''; }, 6000);
+    }
+  }
 
   // Thin progress bar under the nav that fills as you scroll.
   function initReadingProgress() {
@@ -37,89 +91,6 @@
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update, { passive: true });
     update();
-  }
-
-  // per-view --------------------------------------------------------------------
-  if (view === 'idea' || view === 'workflow') initEditor();
-  else if (view === 'architecture') initArchitecture();
-  else if (view === 'diagram') initDiagram();
-  else if (view === 'tickets') initTickets();
-  else if (view === 'reports') initReports();
-
-  // ── Right panel ──────────────────────────────────────────────────────────────
-  function initRightPanel() {
-    const panel = document.getElementById('right-panel');
-    if (!panel) return;
-    document.getElementById('right-open').addEventListener('click', () => document.body.classList.add('right-open'));
-    document.getElementById('right-close').addEventListener('click', () => document.body.classList.remove('right-open'));
-    document.querySelectorAll('.rp-tab').forEach(tab =>
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.rp-tab').forEach(t => t.classList.toggle('active', t === tab));
-        const name = tab.dataset.tab;
-        document.querySelectorAll('.rp-pane').forEach(p => p.classList.toggle('active', p.id === 'rp-' + name));
-        if (name === 'tickets') loadTicketList();
-      }));
-
-    // todos
-    const input = document.getElementById('todo-input');
-    const listEl = document.getElementById('todo-list');
-    autoGrow(input);
-    input.addEventListener('input', () => autoGrow(input));
-    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addTodo(); } });
-    document.getElementById('todo-add-btn').addEventListener('click', addTodo);
-    loadTodos();
-
-    async function loadTodos() {
-      let todos = [];
-      try { todos = await api('GET', '/api/todos'); } catch (_) {}
-      listEl.innerHTML = todos.map(t => `
-        <li class="todo-item" data-id="${t.id}">
-          <span class="todo-text">${esc(t.content)}</span>
-          <button class="btn-ghost todo-to-ticket" data-id="${t.id}" title="Turn into a ticket">→</button>
-          <button class="todo-del" data-id="${t.id}" title="Delete">×</button>
-        </li>`).join('') || '<li class="rp-empty">No todos yet.</li>';
-      listEl.querySelectorAll('.todo-del').forEach(b =>
-        b.addEventListener('click', async () => { await api('DELETE', '/api/todos/' + b.dataset.id); loadTodos(); }));
-      listEl.querySelectorAll('.todo-to-ticket').forEach(b =>
-        b.addEventListener('click', async () => {
-          const text = b.closest('.todo-item').querySelector('.todo-text').textContent;
-          await api('POST', '/api/tickets', { title: text, source: 'todo' });
-          await api('DELETE', '/api/todos/' + b.dataset.id);
-          loadTodos(); loadTicketList();
-          if (window.__refreshTicketsGrid) window.__refreshTicketsGrid();
-        }));
-    }
-    async function addTodo() {
-      const content = input.value.trim(); if (!content) return;
-      await api('POST', '/api/todos', { content });
-      input.value = ''; autoGrow(input); loadTodos();
-    }
-    function autoGrow(el) {
-      if (!el) return;
-      el.style.height = 'auto';
-      const max = 12 * 22;
-      el.style.height = Math.min(el.scrollHeight, max) + 'px';
-      el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
-    }
-
-    // tickets quick-list
-    const ticketListEl = document.getElementById('ticket-list');
-    async function loadTicketList() {
-      let tickets = [];
-      try { tickets = await api('GET', '/api/tickets'); } catch (_) {}
-      ticketListEl.innerHTML = tickets.map(t => `
-        <li class="ticket-item" data-id="${t.id}">
-          <div class="ticket-title">${esc(t.title)}</div>
-          <div class="ticket-meta"><span class="status-chip status-${esc(t.status)}">${esc(t.status)}</span>
-            <span>${t.steps_done}/${t.steps_total} steps</span></div>
-        </li>`).join('') || '<li class="rp-empty">No tickets yet.</li>';
-      ticketListEl.querySelectorAll('.ticket-item').forEach(li =>
-        li.addEventListener('click', () => {
-          if (window.__openTicketById) window.__openTicketById(li.dataset.id);
-          else window.location.href = '/tickets';
-        }));
-    }
-    window.__reloadTicketList = loadTicketList;
   }
 
   // ── Editable doc (idea / workflow) ───────────────────────────────────────────
@@ -163,6 +134,7 @@
     if (!d.exists || !d.content.trim()) { empty.hidden = false; viewerEl.hidden = true; return; }
     renderDoc(viewerEl, d.content);
   }
+
   // Shared read-only document renderer: TOC, scroll-spy, anchors, mermaid, badges, reveal.
   function renderDoc(viewerEl, markdown) {
     const docEl = viewerEl.closest('.doc-viewer');
@@ -179,76 +151,62 @@
     });
   }
 
-  // ── Reports (read-only index + reader over docs/reports/) ────────────────────
-  function initReports() {
+  // ── Collections: Requests / Plans / Reports (index + reader) ─────────────────
+  function initCollection() {
     const file = new URLSearchParams(location.search).get('r');
-    if (file) { openReport(file); return; }
+    if (file) { openDoc(file); return; }
     loadIndex();
+    window.__reloadCollection = loadIndex;
+
+    function chips(t) {
+      let html = '';
+      if (t.status) html += `<span class="status-chip status-${esc(t.status)}">${esc(t.status)}</span>`;
+      if (t.ticket) html += `<span class="status-chip status-open">ticket ${esc(t.ticket)}</span>`;
+      if (t.request) html += `<span class="status-chip status-open">request ${esc(t.request)}</span>`;
+      return html;
+    }
 
     async function loadIndex() {
       let items = [];
-      try { items = await api('GET', '/api/reports'); } catch (_) {}
-      const grid = document.getElementById('reports-index');
+      try { items = await api('GET', PD.colApi); } catch (_) {}
+      const grid = document.getElementById('col-index');
       if (!items.length) {
         grid.innerHTML = '';
-        document.getElementById('reports-empty').hidden = false;
+        document.getElementById('col-empty').hidden = false;
         return;
       }
+      document.getElementById('col-empty').hidden = true;
       grid.innerHTML = items.map(t => `
-        <a class="report-card" href="/reports?r=${encodeURIComponent(t.file)}">
+        <a class="report-card" href="/${esc(view)}?r=${encodeURIComponent(t.file)}">
           <div class="report-card-top">
             <span class="report-title">${esc(t.title)}</span>
-            ${t.ticket ? `<span class="status-chip status-open">ticket ${esc(t.ticket)}</span>` : ''}
+            <span class="report-chips">${chips(t)}</span>
           </div>
           <div class="report-summary">${esc(t.summary)}</div>
           <div class="report-meta-row"><span>${esc(t.date)}</span>${t.author ? `<span>· ${esc(t.author)}</span>` : ''}</div>
         </a>`).join('');
     }
 
-    async function openReport(name) {
-      document.querySelector('.reports-view').hidden = true;
-      document.getElementById('report-reader').hidden = false;
+    async function openDoc(name) {
+      document.querySelector('.col-view').hidden = true;
+      document.getElementById('col-reader').hidden = false;
       const viewerEl = document.getElementById('viewer');
       let d = null;
-      try { d = await api('GET', '/api/reports/' + encodeURIComponent(name)); } catch (_) {}
+      try { d = await api('GET', PD.colApi + '/' + encodeURIComponent(name)); } catch (_) {}
       if (!d) {
-        document.getElementById('report-meta').innerHTML = '<h1 class="report-title-big">Report not found</h1>';
+        document.getElementById('col-meta').innerHTML = '<h1 class="report-title-big">Not found</h1>';
         return;
       }
-      document.title = d.title + ' — Reports';
-      document.getElementById('report-meta').innerHTML = `
+      document.title = d.title + ' — ' + (PD.colLabel || 'Documents');
+      const refs = [d.date, d.author, d.status, d.ticket && ('ticket ' + d.ticket), d.request && ('request ' + d.request)]
+        .filter(Boolean).map(esc).join(' · ');
+      document.getElementById('col-meta').innerHTML = `
         <h1 class="report-title-big">${esc(d.title)}</h1>
-        <p class="view-hint">${esc(d.date)}${d.author ? ' · ' + esc(d.author) : ''}${d.ticket ? ' · ticket ' + esc(d.ticket) : ''}</p>`;
+        <p class="view-hint">${refs}</p>`;
       renderDoc(viewerEl, d.body);
     }
   }
-  // Hover-to-copy "#" anchors on section headings.
-  function addHeadingAnchors(root) {
-    root.querySelectorAll('h2[id], h3[id]').forEach((h) => {
-      const a = document.createElement('a');
-      a.className = 'head-anchor'; a.href = '#' + h.id; a.textContent = '#';
-      a.title = 'Copy link to this section';
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        history.replaceState(null, '', '#' + h.id);
-        if (navigator.clipboard) navigator.clipboard.writeText(location.href).catch(() => {});
-        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-      h.prepend(a);
-    });
-  }
-  // Gentle fade-and-rise as blocks scroll into view (only when motion is allowed).
-  function setupReveal(viewerEl) {
-    const contents = viewerEl.querySelector('.toastui-editor-contents') || viewerEl;
-    const items = [...contents.children];
-    if (!items.length) return;
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('revealed'); obs.unobserve(e.target); } });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0 });
-    items.forEach((el) => obs.observe(el));
-    // safety net: never leave content hidden, even if observation misfires
-    setTimeout(() => items.forEach((el) => el.classList.add('revealed')), 2500);
-  }
+
   // Highlight the TOC entry whose section is currently near the top of the viewport.
   function setupTocSpy(root) {
     const links = new Map();
@@ -282,6 +240,7 @@
     }, { rootMargin: `-${navH + 8}px 0px -65% 0px`, threshold: 0 });
     heads.forEach(h => obs.observe(h));
   }
+
   function buildToc(viewerEl) {
     const toc = document.getElementById('arch-toc');
     const heads = viewerEl.querySelectorAll('h1, h2, h3');
@@ -294,39 +253,34 @@
     });
     toc.innerHTML = html;
   }
-  // Turn ```mermaid code blocks rendered by the viewer into actual SVG diagrams.
-  async function renderArchMermaid(root) {
-    if (typeof mermaid === 'undefined') return;
-    const isMermaid = (c) =>
-      /(?:^|\s)lang(?:uage)?-mermaid(?:\s|$)/.test(c.className) ||
-      /^\s*(?:flowchart|graph|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|mindmap|gitGraph)\b/.test(c.textContent);
-    const blocks = [...root.querySelectorAll('pre code')].filter(isMermaid);
-    if (!blocks.length) return;
-    mermaid.initialize({
-      startOnLoad: false, theme: 'base', securityLevel: 'loose',
-      themeVariables: { primaryColor: '#d7f0e3', primaryTextColor: '#0c3b2c', primaryBorderColor: '#1f8a70', lineColor: '#1f8a70', fontSize: '14px' },
-      flowchart: { curve: 'basis', useMaxWidth: true }, sequence: { useMaxWidth: true }, er: { useMaxWidth: true },
+
+  // Hover-to-copy "#" anchors on section headings.
+  function addHeadingAnchors(root) {
+    root.querySelectorAll('h2[id], h3[id]').forEach((h) => {
+      const a = document.createElement('a');
+      a.className = 'head-anchor'; a.href = '#' + h.id; a.textContent = '#';
+      a.title = 'Copy link to this section';
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        history.replaceState(null, '', location.pathname + location.search + '#' + h.id);
+        if (navigator.clipboard) navigator.clipboard.writeText(location.href).catch(() => {});
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      h.prepend(a);
     });
-    let i = 0;
-    for (const code of blocks) {
-      const pre = code.closest('pre');
-      try {
-        const { svg } = await mermaid.render('arch-mmd-' + (i++), code.textContent.trim());
-        const fig = document.createElement('figure');
-        fig.className = 'mermaid-figure revealed';   // already visible; never gets stuck hidden by reveal
-        fig.innerHTML = svg;
-        pre.replaceWith(fig);
-      } catch (_) { /* leave as code on parse error */ }
-    }
   }
-  // Color-code status words (built / scaffold / planned …) in tables, like the original legend.
-  function badgeStatuses(root) {
-    const map = { built: 'built', working: 'built', done: 'built', scaffold: 'scaffold', scaffolded: 'scaffold', planned: 'planned', 'not wired': 'planned', partial: 'partial', wip: 'partial' };
-    root.querySelectorAll('td').forEach((el) => {
-      if (el.children.length) return;
-      const key = el.textContent.trim().toLowerCase();
-      if (map[key]) el.innerHTML = `<span class="badge badge-${map[key]}">${esc(el.textContent.trim())}</span>`;
-    });
+
+  // Gentle fade-and-rise as blocks scroll into view (only when motion is allowed).
+  function setupReveal(viewerEl) {
+    const contents = viewerEl.querySelector('.toastui-editor-contents') || viewerEl;
+    const items = [...contents.children];
+    if (!items.length) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('revealed'); obs.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0 });
+    items.forEach((el) => obs.observe(el));
+    // safety net: never leave content hidden, even if observation misfires
+    setTimeout(() => items.forEach((el) => el.classList.add('revealed')), 2500);
   }
 
   // ── Diagram (read-only Mermaid) ──────────────────────────────────────────────
@@ -353,124 +307,39 @@
     }
   }
 
-  // ── Tickets page (grid + modal) ──────────────────────────────────────────────
-  function initTickets() {
-    const grid = document.getElementById('tickets-grid');
-    let tickets = [];
-    let modalEditor = null;
-    let current = null;
-    let steps = [];
-
-    loadTickets();
-    document.getElementById('new-ticket-btn').addEventListener('click', async () => {
-      const t = await api('POST', '/api/tickets', { title: 'Untitled ticket', source: 'manual' });
-      tickets.unshift(t); renderGrid(); openModal(t);
-      if (window.__reloadTicketList) window.__reloadTicketList();
+  // Turn ```mermaid code blocks rendered by the viewer into actual SVG diagrams.
+  async function renderArchMermaid(root) {
+    if (typeof mermaid === 'undefined') return;
+    const isMermaid = (c) =>
+      /(?:^|\s)lang(?:uage)?-mermaid(?:\s|$)/.test(c.className) ||
+      /^\s*(?:flowchart|graph|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|mindmap|gitGraph)\b/.test(c.textContent);
+    const blocks = [...root.querySelectorAll('pre code')].filter(isMermaid);
+    if (!blocks.length) return;
+    mermaid.initialize({
+      startOnLoad: false, theme: 'base', securityLevel: 'loose',
+      themeVariables: { primaryColor: '#d7f0e3', primaryTextColor: '#0c3b2c', primaryBorderColor: '#1f8a70', lineColor: '#1f8a70', fontSize: '14px' },
+      flowchart: { curve: 'basis', useMaxWidth: true }, sequence: { useMaxWidth: true }, er: { useMaxWidth: true },
     });
-
-    window.__refreshTicketsGrid = loadTickets;
-    window.__openTicketById = (id) => {
-      const t = tickets.find(x => x.id === id);
-      if (t) { document.body.classList.remove('right-open'); openModal(t); }
-    };
-
-    async function loadTickets() {
-      try { tickets = await api('GET', '/api/tickets'); } catch (_) { tickets = []; }
-      renderGrid();
-    }
-    function renderGrid() {
-      if (!tickets.length) { grid.innerHTML = '<p class="tickets-empty">No tickets yet. Create one, or turn a todo into a ticket.</p>'; return; }
-      grid.innerHTML = tickets.map(t => `
-        <div class="ticket-card ${t.status === 'done' ? 'card-done' : ''}" data-id="${t.id}">
-          <div class="card-header"><span class="card-title">${esc(t.title)}</span>
-            <span class="status-chip status-${esc(t.status)}">${esc(t.status)}</span></div>
-          <div class="card-body">${esc(t.reasoning || '—')}</div>
-          <div class="card-footer"><span class="card-steps-done">${t.steps_done}/${t.steps_total} steps</span>
-            <span>${esc(t.file)}</span></div>
-        </div>`).join('');
-      grid.querySelectorAll('.ticket-card').forEach(c =>
-        c.addEventListener('click', () => openModal(tickets.find(t => t.id === c.dataset.id))));
-    }
-
-    const modal = document.getElementById('ticket-modal');
-    const elTitle = document.getElementById('m-title');
-    const elStatus = document.getElementById('m-status');
-    const elReason = document.getElementById('m-reasoning');
-    const elSteps = document.getElementById('m-steps');
-    const elMsg = document.getElementById('m-status-msg');
-    const elToggle = document.getElementById('m-toggle');
-
-    function openModal(t) {
-      current = t; steps = (t.steps || []).map(s => ({ ...s }));
-      elTitle.value = t.title; elReason.value = t.reasoning || '';
-      setChip(t.status); renderSteps();
-      document.getElementById('m-body').innerHTML = '';
-      modalEditor = new toastui.Editor({
-        el: document.getElementById('m-body'), height: '240px',
-        initialEditType: 'wysiwyg', previewStyle: 'tab',
-        initialValue: t.body || '', usageStatistics: false,
-      });
-      modal.classList.remove('hidden');
-    }
-    function closeModal() {
-      modal.classList.add('hidden');
-      if (modalEditor) { modalEditor.destroy(); modalEditor = null; }
-      current = null;
-    }
-    function setChip(status) { elStatus.textContent = status; elStatus.className = 'status-chip status-' + status; }
-    function msg(m, err) { elMsg.textContent = m; elMsg.classList.toggle('is-error', !!err); if (!err) setTimeout(() => elMsg.textContent = '', 3000); }
-
-    function renderSteps() {
-      elToggle.textContent = current.status === 'done' ? 'Reopen' : 'Mark done';
-      elSteps.innerHTML = steps.map((s, i) => `
-        <li class="detail-step ${s.done ? 'step-done' : ''}">
-          <input type="checkbox" data-i="${i}" ${s.done ? 'checked' : ''}>
-          <span>${esc(s.text)}</span>
-          <button class="todo-del step-del" data-i="${i}" title="Remove">×</button>
-        </li>`).join('');
-      elSteps.querySelectorAll('input[type=checkbox]').forEach(cb =>
-        cb.addEventListener('change', async () => { steps[+cb.dataset.i].done = cb.checked; await persist({ steps }); renderSteps(); }));
-      elSteps.querySelectorAll('.step-del').forEach(b =>
-        b.addEventListener('click', () => { steps.splice(+b.dataset.i, 1); renderSteps(); }));
-    }
-
-    async function persist(patch) {
-      const updated = await api('PATCH', '/api/tickets/' + current.id, patch);
-      current = updated;
-      const i = tickets.findIndex(x => x.id === updated.id);
-      if (i !== -1) tickets[i] = updated;
-      renderGrid();
-      if (window.__reloadTicketList) window.__reloadTicketList();
-      return updated;
-    }
-
-    document.getElementById('m-step-add-btn').addEventListener('click', addStep);
-    document.getElementById('m-step-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addStep(); } });
-    function addStep() {
-      const inp = document.getElementById('m-step-input');
-      if (!inp.value.trim()) return;
-      steps.push({ text: inp.value.trim(), done: false }); inp.value = ''; renderSteps();
-    }
-
-    document.getElementById('m-save').addEventListener('click', async () => {
-      msg('Saving…');
+    let i = 0;
+    for (const code of blocks) {
+      const pre = code.closest('pre');
       try {
-        await persist({ title: elTitle.value.trim() || 'Untitled', reasoning: elReason.value, steps, body: modalEditor.getMarkdown() });
-        msg('Saved to ' + current.file);
-      } catch (e) { msg('Error: ' + e.message, true); }
+        const { svg } = await mermaid.render('arch-mmd-' + (i++), code.textContent.trim());
+        const fig = document.createElement('figure');
+        fig.className = 'mermaid-figure revealed';   // already visible; never gets stuck hidden by reveal
+        fig.innerHTML = svg;
+        pre.replaceWith(fig);
+      } catch (_) { /* leave as code on parse error */ }
+    }
+  }
+
+  // Color-code status words (built / scaffold / planned …) in tables, like the original legend.
+  function badgeStatuses(root) {
+    const map = { built: 'built', working: 'built', done: 'built', scaffold: 'scaffold', scaffolded: 'scaffold', planned: 'planned', 'not wired': 'planned', partial: 'partial', wip: 'partial' };
+    root.querySelectorAll('td').forEach((el) => {
+      if (el.children.length) return;
+      const key = el.textContent.trim().toLowerCase();
+      if (map[key]) el.innerHTML = `<span class="badge badge-${map[key]}">${esc(el.textContent.trim())}</span>`;
     });
-    elToggle.addEventListener('click', async () => {
-      try { const u = await persist({ status: current.status === 'done' ? 'open' : 'done' }); setChip(u.status); renderSteps(); }
-      catch (e) { msg('Error: ' + e.message, true); }
-    });
-    document.getElementById('m-delete').addEventListener('click', async () => {
-      if (!confirm('Delete "' + current.title + '"? This removes the task file.')) return;
-      await api('DELETE', '/api/tickets/' + current.id);
-      tickets = tickets.filter(x => x.id !== current.id);
-      renderGrid(); closeModal();
-      if (window.__reloadTicketList) window.__reloadTicketList();
-    });
-    document.getElementById('m-close').addEventListener('click', closeModal);
-    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   }
 })();

@@ -1,33 +1,39 @@
 # Project Docs
 
-Local, per-project documentation + task app. Five views:
+Local, per-project documentation app and a shared control surface between you and Claude Code.
+The working pipeline: **you write a Request → Claude writes a Plan → Claude implements it → Claude
+writes a Report.**
+
+Six views:
 
 - **Workflow** — WYSIWYG markdown editor, saved to `docs/workflow.md` (editable by you).
 - **Diagram** — read-only Mermaid render of `docs/diagram.mmd` (Claude Code writes it; empty until generated).
-- **Architecture** — read-only render of `docs/architecture.md` with an auto-generated table of contents (Claude Code writes it).
-- **Tickets** — card grid + detail modal over `tasks/*.md`. Each ticket carries a WYSIWYG instruction body; a Todo panel (multi-line, auto-expanding) sits alongside, and todos can be promoted to tickets.
-- **Reports** — read-only index + reader over `docs/reports/*.md`: long-form work reports written by AIs when they finish a task (what/why/dataflow, mermaid supported).
+- **Architecture** — read-only render of `docs/architecture.md` with auto-TOC + scroll-spy (Claude Code writes it).
+- **Requests** — what you want built. Written in the global **✎ New request** composer (a wide
+  slide-in panel available on every view), saved to `docs/requests/`.
+- **Plans** — Claude Code's implementation plans (current state, the change & why, step-by-step,
+  test suite, before/after Mermaid diagrams). Read-only; `docs/plans/`.
+- **Reports** — long-form work reports written when a task is finished (what/why/dataflow). Read-only; `docs/reports/`.
 
 Content is **files-first** — everything lives in the host project as plain text (no database):
 
 ```
-<project>/docs/idea.md           # idea capture (editable)
-<project>/docs/workflow.md       # Workflow view (editable)
-<project>/docs/architecture.md   # read-only in UI; Claude Code edits
-<project>/docs/diagram.mmd       # read-only in UI; Claude Code edits
-<project>/tasks/*.md             # ticket / implementation inbox
-<project>/tasks/_todos.md        # the Todo list (the "_" keeps it out of the ticket grid)
-<project>/docs/reports/*.md      # AI work reports (read-only in UI; AIs write them)
-<project>/.project-docs/         # the installed app code (its own repo; entirely gitignored)
+<project>/docs/idea.md            # idea capture (editable)
+<project>/docs/workflow.md        # Workflow view (editable)
+<project>/docs/architecture.md    # read-only in UI; Claude Code edits
+<project>/docs/diagram.mmd        # read-only in UI; Claude Code edits
+<project>/docs/requests/*.md      # your requests (composer writes these)
+<project>/docs/plans/*.md         # Claude Code's plans (read-only in UI)
+<project>/docs/reports/*.md       # Claude Code's reports (read-only in UI)
 <project>/.claude/project-docs.md # the Claude Code integration contract (tracked)
 ```
 
-`.project-docs/` is the installed tool and is fully gitignored — one folder, one purpose. The
-contract lives in `.claude/project-docs.md` (with your other Claude config), so no folder mixes
-tracked and ignored content. The visible project tree stays clean — your code plus `docs/` and `tasks/`.
+Files in `requests/`, `plans/`, and `reports/` are named `YYYY-MM-DD-NN-slug.md` — `NN` is a
+per-day sequence so same-day documents stay distinct and every list shows newest first.
 
-Title defaults to the project folder name (override with `DOCS_TITLE`); port defaults to `4500`
-(override with `PORT`). There is no database — everything is committable text.
+`.project-docs/` is the installed app and is fully gitignored — one folder, one purpose. The
+contract lives in `.claude/project-docs.md` (with your other Claude config). Title defaults to the
+project folder name (override `DOCS_TITLE`); port defaults to `4500` (override `PORT`).
 
 ## Run
 
@@ -37,17 +43,18 @@ npm install
 npm start            # → http://localhost:4500
 ```
 
-`PROJECT_ROOT` is where `docs/` and `tasks/` are read and written. If omitted, it defaults to the
-**folder that contains `.project-docs/`** — i.e. the project the app is installed inside. So when the
-app lives at `<project>/.project-docs/`, running `cd .project-docs && npm start` uses `<project>/`
-as the root. Set `PROJECT_ROOT=/abs/path` to point it anywhere else (e.g. a throwaway folder for
-testing). Port defaults to `4500` (override with `PORT`).
+`PROJECT_ROOT` is where `docs/` is read and written. If omitted, it defaults to the **folder that
+contains `.project-docs/`**. Set `PROJECT_ROOT=/abs/path` to point anywhere else.
 
 ## Behaviour
 
 - First visit with no `docs/workflow.md` → the **idea capture** editor. Save writes `docs/idea.md`.
 - Once `docs/workflow.md` exists → `/` lands on the **Workflow** editor.
-- Diagram and Architecture are read-only by design; only Claude Code writes those files.
+- The **✎ New request** button (bottom right, every view) opens the composer — a ~1/3-screen
+  WYSIWYG panel. Save creates `docs/requests/YYYY-MM-DD-NN-slug.md` (title taken from your first
+  heading or line).
+- Then in Claude Code: *"draft a plan for the latest request"* → a plan appears in **Plans**;
+  *"implement the plan"* → work happens; a report appears in **Reports**.
 
 ## Scaffolding into a project
 
@@ -56,36 +63,16 @@ testing). Port defaults to `4500` (override with `PORT`).
 ```bash
 cd .project-docs
 npm install
-npm run setup      # creates docs/, tasks/, .claude/project-docs.md; wires root CLAUDE.md
+npm run setup      # creates docs/ (+requests/plans/reports), .claude/project-docs.md; wires root CLAUDE.md
 npm start          # → http://localhost:4500
 ```
 
-It resolves the **project root as the folder containing `.project-docs/`**. To target elsewhere:
-`PROJECT_ROOT=/abs/path npm run setup`.
-
-What it does: creates `docs/` and `tasks/`, writes the `.claude/project-docs.md` integration
-contract, and adds an `@.claude/project-docs.md` import to the project's root `CLAUDE.md`
-(creating that file if absent, appending once if present).
-
 ## Reuse on every project
 
-Pick whichever fits; the plugin is the nicest.
-
-1. **Claude Code plugin (recommended).** This repo is also a one-plugin marketplace, so you install
-   once and get the `/docs-init` slash command plus the `docs-init` skill in every project:
-
-   ```text
-   /plugin marketplace add ledminh/project-docs
-   /plugin install project-docs@ledminh
-   ```
-
-   Then in any project just run `/docs-init` (or say *"set up project docs here"*). To update later:
-   `/plugin marketplace update` then reinstall.
-
-2. **Manual skill install.** Copy just the skill to your user skills dir:
+1. **Skill install (one-time).** Copy the skill to your user skills dir:
    `npx degit ledminh/project-docs/skills/docs-init ~/.claude/skills/docs-init`.
-
-3. **No Claude at all.** Plain one-liner in any project:
+   Then in any project: *"set up project docs here."*
+2. **Plain one-liner:**
    `npx degit ledminh/project-docs .project-docs && cd .project-docs && npm install && npm run setup`.
 
 Optionally add to `~/.claude/CLAUDE.md` so Claude Code recognizes the convention everywhere:
@@ -93,12 +80,12 @@ Optionally add to `~/.claude/CLAUDE.md` so Claude Code recognizes the convention
 ```markdown
 ## Project Docs
 If a project contains a `.claude/project-docs.md` file, follow it.
-To set this up, run the `/docs-init` command (or the `docs-init` skill).
+To set this up, run the `docs-init` skill.
 ```
 
 ## Claude Code integration contract
 
-After setup, `.claude/project-docs.md` tells Claude Code: which files map to which views, that
-`docs/architecture.md` + `docs/diagram.mmd` are read-only in the UI (Claude maintains them), and
-that `tasks/*.md` is the implementation inbox — "work the tickets" means implement every task whose
-`status` is not `done`, check off steps, and flip `status: done`.
+After setup, `.claude/project-docs.md` tells Claude Code: which files map to which views, the
+`YYYY-MM-DD-NN-slug.md` naming, how to turn a request into a plan (required sections incl.
+before/after diagrams and a test suite), to implement plans step by step with status tracking,
+and to write a long-form what/why/dataflow report whenever work finishes.

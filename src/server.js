@@ -3,12 +3,10 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
-const { ROOT, ensureDirs } = require('./paths');
+const { ROOT, REQUESTS_DIR, PLANS_DIR, REPORTS_DIR, ensureDirs } = require('./paths');
 const { readDoc } = require('./files');
 const docsRouter = require('./routes/docs');
-const todosRouter = require('./routes/todos');
-const ticketsRouter = require('./routes/tickets');
-const reportsRouter = require('./routes/reports');
+const collectionRouter = require('./routes/collection');
 
 ensureDirs();
 
@@ -20,9 +18,9 @@ const TMPL = path.join(__dirname, 'template.html');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/doc', docsRouter);
-app.use('/api/todos', todosRouter);
-app.use('/api/tickets', ticketsRouter);
-app.use('/api/reports', reportsRouter);
+app.use('/api/requests', collectionRouter(REQUESTS_DIR, { writable: true }));
+app.use('/api/plans', collectionRouter(PLANS_DIR));
+app.use('/api/reports', collectionRouter(REPORTS_DIR));
 
 // ── Config API ───────────────────────────────────────────────────────────────
 app.get('/api/config', (_req, res) => {
@@ -30,7 +28,7 @@ app.get('/api/config', (_req, res) => {
 });
 
 // ── Views ─────────────────────────────────────────────────────────────────────
-const VIEWS = ['workflow', 'diagram', 'architecture', 'tickets', 'reports'];
+const VIEWS = ['workflow', 'diagram', 'architecture', 'requests', 'plans', 'reports'];
 function title() { return TITLE; }
 
 // Landing: empty-state idea capture until workflow.md exists, then Workflow.
@@ -79,8 +77,7 @@ app.get('/architecture', (_req, res) => {
       <div id="viewer" class="doc-viewer"></div>
     </div>
   </section>`;
-  const headExtra = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>`;
-  res.send(shell({ viewLabel: 'Architecture', active: 'architecture', content, pd: { view: 'architecture', docName: 'architecture' }, headExtra }));
+  res.send(shell({ viewLabel: 'Architecture', active: 'architecture', content, pd: { view: 'architecture', docName: 'architecture' }, headExtra: MERMAID }));
 });
 
 // Diagram — read-only Mermaid render of docs/diagram.mmd (not seeded).
@@ -99,82 +96,63 @@ app.get('/diagram', (_req, res) => {
     <div id="diagram-error" class="diagram-error" hidden></div>
     <div id="diagram-render" class="diagram-render"></div>
   </section>`;
-  const headExtra = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>`;
-  res.send(shell({ viewLabel: 'Diagram', active: 'diagram', content, pd: { view: 'diagram', docName: 'diagram' }, headExtra }));
+  res.send(shell({ viewLabel: 'Diagram', active: 'diagram', content, pd: { view: 'diagram', docName: 'diagram' }, headExtra: MERMAID }));
 });
 
-// Tickets — grid + detail modal + Todo panel.
-app.get('/tickets', (_req, res) => {
-  const content = `
-  <section class="tickets-view" data-view="tickets">
-    <header class="view-head tickets-head">
-      <div>
-        <h1>Tickets</h1>
-        <p class="view-hint">Each ticket is a file in <code>tasks/</code>. Write what you want built; Claude Code implements open ones.</p>
-      </div>
-      <button id="new-ticket-btn" class="btn-primary">New ticket</button>
-    </header>
-    <div id="tickets-grid" class="tickets-grid"><p class="muted">Loading…</p></div>
-  </section>
+// ── Collections: Requests / Plans / Reports (index + reader) ─────────────────
+const COLLECTIONS = {
+  requests: {
+    label: 'Requests',
+    hint: 'What you want built or changed — written in the composer (✎, bottom right), saved to <code>docs/requests/</code>. Ask Claude Code to turn a request into a plan.',
+    empty: `<p><strong>No requests yet.</strong></p>
+            <p>Open the composer with the <strong>✎ New request</strong> button (any view) and write what you want.</p>`,
+  },
+  plans: {
+    label: 'Plans',
+    hint: 'Claude Code’s implementation plans — current state, the change &amp; why, step-by-step, test suite, and before/after diagrams. Read-only; files live in <code>docs/plans/</code>.',
+    empty: `<p><strong>No plans yet.</strong></p>
+            <p>Write a request, then ask Claude Code: <em>“draft a plan for request …”</em> — it writes the plan here.</p>`,
+  },
+  reports: {
+    label: 'Reports',
+    hint: 'Work reports written when a task is finished — what was done, the reasoning, and how the data flows. Read-only; files live in <code>docs/reports/</code>.',
+    empty: `<p><strong>No reports yet.</strong></p>
+            <p>When Claude Code (or any AI) finishes a piece of work, it writes a report to <code>docs/reports/</code>.</p>`,
+  },
+};
 
-  <div id="ticket-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <div class="modal-head">
-        <input id="m-title" class="m-title" placeholder="Ticket title" />
-        <span id="m-status" class="status-chip"></span>
-        <button id="m-close" class="icon-btn" title="Close">×</button>
-      </div>
-      <label class="field-label">Reasoning</label>
-      <textarea id="m-reasoning" class="m-reasoning" rows="2" placeholder="Why this ticket exists…"></textarea>
-      <label class="field-label">Steps</label>
-      <ul id="m-steps" class="m-steps"></ul>
-      <div class="m-step-add">
-        <input id="m-step-input" placeholder="Add a step…" />
-        <button id="m-step-add-btn" class="btn-ghost">Add step</button>
-      </div>
-      <label class="field-label">Instructions for Claude Code <span class="muted">(saved to the task file)</span></label>
-      <div id="m-body"></div>
-      <div class="modal-actions">
-        <span id="m-status-msg" class="save-status"></span>
-        <button id="m-toggle" class="btn-ghost"></button>
-        <button id="m-delete" class="btn-danger">Delete</button>
-        <button id="m-save" class="btn-primary">Save</button>
-      </div>
-    </div>
-  </div>`;
-  res.send(shell({ viewLabel: 'Tickets', active: 'tickets', content, pd: { view: 'tickets' } }));
-});
-
-// Reports — read-only index + reader over docs/reports/*.md (AI work reports).
-app.get('/reports', (_req, res) => {
-  const content = `
-  <section class="reports-view" data-view="reports">
+for (const [view, c] of Object.entries(COLLECTIONS)) {
+  app.get('/' + view, (_req, res) => {
+    const content = `
+  <section class="col-view" data-view="${view}">
     <header class="view-head">
-      <h1>Reports</h1>
-      <p class="view-hint">Work reports written when a task is finished — what was done, the reasoning, and how the data flows. Read-only; files live in <code>docs/reports/</code>.</p>
+      <h1>${c.label}</h1>
+      <p class="view-hint">${c.hint}</p>
     </header>
-    <div id="reports-empty" class="empty-state" hidden>
-      <p><strong>No reports yet.</strong></p>
-      <p>When Claude Code (or any AI) finishes a piece of work, it writes a report to <code>docs/reports/YYYY-MM-DD-&lt;slug&gt;.md</code>.</p>
-    </div>
-    <div id="reports-index" class="reports-index"><p class="muted">Loading…</p></div>
+    <div id="col-empty" class="empty-state" hidden>${c.empty}</div>
+    <div id="col-index" class="reports-index"><p class="muted">Loading…</p></div>
   </section>
 
-  <section class="doc-layout" id="report-reader" hidden>
-    <aside class="toc"><div class="toc-label">In this report</div><nav id="arch-toc"></nav></aside>
+  <section class="doc-layout" id="col-reader" hidden>
+    <aside class="toc"><div class="toc-label">On this page</div><nav id="arch-toc"></nav></aside>
     <div class="doc-main">
       <header class="view-head report-head">
-        <a href="/reports" class="btn-ghost report-back">← All reports</a>
-        <div id="report-meta"></div>
+        <a href="/${view}" class="btn-ghost report-back">← All ${view}</a>
+        <div id="col-meta"></div>
       </header>
       <div id="viewer" class="doc-viewer"></div>
     </div>
   </section>`;
-  const headExtra = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>`;
-  res.send(shell({ viewLabel: 'Reports', active: 'reports', content, pd: { view: 'reports' }, headExtra }));
-});
+    res.send(shell({ viewLabel: c.label, active: view, content, pd: { view, colApi: '/api/' + view, colLabel: c.label }, headExtra: MERMAID }));
+  });
+}
+
+// The retired Tickets view → Requests.
+app.get('/tickets', (_req, res) => res.redirect('/requests'));
 
 // ── Page assembly ───────────────────────────────────────────────────────────
+const MERMAID = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>`;
+
 function navLinks(active) {
   return VIEWS.map(v => {
     const label = v[0].toUpperCase() + v.slice(1);
@@ -183,40 +161,34 @@ function navLinks(active) {
   }).join('\n      ');
 }
 
-// Global Todo/Tickets panel — shown on every view EXCEPT Tickets (redundant there).
-function rightPanelHtml() {
-  return `<button id="right-open" class="right-open-btn" title="Open Todo panel">☰ Todo</button>
-    <aside id="right-panel">
-      <div class="rp-header">
-        <div class="rp-tabs">
-          <button class="rp-tab active" data-tab="todos">Todo</button>
-          <button class="rp-tab" data-tab="tickets">Tickets</button>
+// Global Request composer — a wide slide-in panel, available on every view.
+function composerHtml() {
+  return `<button id="composer-open" class="composer-open-btn" title="Write a new request">✎ New request</button>
+    <aside id="composer">
+      <div class="composer-head">
+        <div>
+          <div class="composer-title">New request</div>
+          <div class="composer-hint">Brainstorm freely — saved to <code>docs/requests/</code>, then ask Claude Code for a plan.</div>
         </div>
-        <button id="right-close" class="rp-close-btn" title="Close">×</button>
+        <button id="composer-close" class="rp-close-btn" title="Close">×</button>
       </div>
-      <div id="rp-todos" class="rp-pane active">
-        <div class="todo-add">
-          <textarea id="todo-input" rows="2" placeholder="Add a todo…  (Enter to add · Shift+Enter for a new line)"></textarea>
-          <button id="todo-add-btn" class="btn-primary">Add</button>
-        </div>
-        <ul id="todo-list"></ul>
-      </div>
-      <div id="rp-tickets" class="rp-pane">
-        <ul id="ticket-list"></ul>
+      <div id="composer-editor"></div>
+      <div class="composer-actions">
+        <span id="composer-status" class="save-status"></span>
+        <button id="composer-save" class="btn-primary">Save request</button>
       </div>
     </aside>`;
 }
 
 function shell({ viewLabel, active, content, pd, headExtra = '' }) {
   const tmpl = fs.readFileSync(TMPL, 'utf8');
-  const rightPanel = active === 'tickets' ? '' : rightPanelHtml();
   return tmpl
     .replace(/\{\{TITLE\}\}/g, esc(title()))
     .replace('{{VIEW_LABEL}}', esc(viewLabel))
     .replace('{{HEAD_EXTRA}}', headExtra)
     .replace('{{NAV_LINKS}}', navLinks(active))
     .replace('{{CONTENT}}', content)
-    .replace('{{RIGHT_PANEL}}', rightPanel)
+    .replace('{{RIGHT_PANEL}}', composerHtml())
     .replace('{{PD_JSON}}', JSON.stringify(pd));
 }
 

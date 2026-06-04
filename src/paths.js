@@ -14,17 +14,18 @@ let defaultRoot = path.dirname(APP_DIR);
 if (path.basename(defaultRoot) === '.project-docs') defaultRoot = path.dirname(defaultRoot);
 const ROOT = path.resolve(process.env.PROJECT_ROOT || defaultRoot);
 
-const DOCS_DIR    = path.join(ROOT, 'docs');
-const TASKS_DIR   = path.join(ROOT, 'tasks');
-const REPORTS_DIR = path.join(DOCS_DIR, 'reports'); // AI work reports — one file per report
-const CLAUDE_DIR  = path.join(ROOT, '.claude'); // the contract lives here (tracked)
+const DOCS_DIR     = path.join(ROOT, 'docs');
+const REQUESTS_DIR = path.join(DOCS_DIR, 'requests'); // user's requests/brainstorms — one file each
+const PLANS_DIR    = path.join(DOCS_DIR, 'plans');    // AI-written plans — one file each
+const REPORTS_DIR  = path.join(DOCS_DIR, 'reports');  // AI work reports — one file each
+const CLAUDE_DIR   = path.join(ROOT, '.claude'); // the contract lives here (tracked)
 
 // Only ever auto-create content dirs. The app folder (.project-docs/) and .claude/ are
 // managed by the scaffold, not created on every boot.
 function ensureDirs() {
-  for (const d of [DOCS_DIR, TASKS_DIR, REPORTS_DIR]) {
+  for (const d of [DOCS_DIR, REQUESTS_DIR, PLANS_DIR, REPORTS_DIR]) {
     if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
   }
 }
 
-module.exports = { ROOT, DOCS_DIR, TASKS_DIR, REPORTS_DIR, CLAUDE_DIR, ensureDirs };
+module.exports = { ROOT, DOCS_DIR, REQUESTS_DIR, PLANS_DIR, REPORTS_DIR, CLAUDE_DIR, ensureDirs };

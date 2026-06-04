@@ -1,6 +1,6 @@
 ---
 name: docs-init
-description: Scaffold the Project Docs app (Workflow / Diagram / Architecture / Tickets views) into the current project. Use when the user wants to set up project documentation tooling in a new or existing project folder, or says things like "install the docs app here" or "set up project docs".
+description: Scaffold the Project Docs app (Workflow / Diagram / Architecture / Requests / Plans / Reports views) into the current project. Use when the user wants to set up project documentation tooling in a new or existing project folder, or says things like "install the docs app here" or "set up project docs".
 ---
 
 # Initialize the Project Docs app in this project
@@ -22,12 +22,12 @@ Goal: drop the Project Docs app into the **current working directory** (the proj
    ```bash
    cd .project-docs
    npm install
-   npm run setup     # creates docs/, tasks/, .claude/project-docs.md and wires root CLAUDE.md
+   npm run setup     # creates docs/ (+requests/plans/reports), .claude/project-docs.md and wires root CLAUDE.md
    ```
 
    `npm run setup` resolves the **project root as the folder containing `.project-docs/`** by default. To target a different folder, run it with `PROJECT_ROOT=/abs/path npm run setup`.
 
-4. **Read the contract.** After setup, read `.claude/project-docs.md` — it defines the file conventions you must follow in this project (which docs you maintain, and how `tasks/*.md` work).
+4. **Read the contract.** After setup, read `.claude/project-docs.md` — it defines the file conventions you must follow in this project (which docs you maintain, and how the request → plan → implement → report pipeline works).
 
 5. **Tell the user how to run it:**
    ```bash
@@ -37,6 +37,6 @@ Goal: drop the Project Docs app into the **current working directory** (the proj
 
 ## Notes
 - `.project-docs/` is the installed app and is entirely gitignored. The contract lives in `.claude/project-docs.md` (tracked) so no folder mixes tracked + ignored content.
-- The app is files-first: project content is plain text in `docs/` and `tasks/` — no database. Todos are `tasks/_todos.md`.
+- The app is files-first: everything is plain text under `docs/` — no database. Requests, plans, and reports are one file each, named `YYYY-MM-DD-NN-slug.md`.
 - `docs/architecture.md` and `docs/diagram.mmd` are read-only in the UI — you maintain those files. `docs/workflow.md` and `docs/idea.md` are user-editable.
-- The implementation inbox is `tasks/*.md`. When the user says "work the tickets", implement every task whose `status` is not `done`.
+- The pipeline: the user writes a request (composer → `docs/requests/`), you write a plan to `docs/plans/` (current state, change & why, steps, test suite, before/after mermaid diagrams), implement it step by step, then write a long-form what/why/dataflow report to `docs/reports/`.
