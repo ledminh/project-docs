@@ -228,6 +228,42 @@ html { scroll-behavior: smooth; }
 .diagram-render { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; overflow: auto; text-align: center; }
 .diagram-render svg { max-width: 100%; height: auto; }
 
+/* interactive mode: pan / zoom / fullscreen */
+.diagram-render.diagram-interactive {
+  position: relative; overflow: hidden; padding: 0;
+  height: calc(100vh - var(--nav-h) - 200px); min-height: 420px;
+  cursor: grab; touch-action: none; user-select: none;
+  background:
+    radial-gradient(circle, #e3e9e6 1px, transparent 1px) 0 0 / 22px 22px,
+    var(--panel);
+}
+.diagram-render.diagram-interactive.dragging { cursor: grabbing; }
+.diagram-render.diagram-interactive:fullscreen { height: 100vh; border-radius: 0; }
+.diagram-stage {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  transform-origin: 0 0; will-change: transform;
+}
+.diagram-stage svg { max-width: 92%; max-height: 92%; height: auto; pointer-events: none; }
+.diagram-controls {
+  position: absolute; top: 14px; right: 14px; z-index: 5;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.diagram-controls button {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1px solid var(--line); background: #fff; color: var(--green-ink);
+  font-size: 16px; font-weight: 700; cursor: pointer; line-height: 1;
+  box-shadow: 0 1px 4px rgba(15,35,59,.10); transition: background .12s, border-color .12s;
+}
+.diagram-controls button:hover { background: var(--green-soft); border-color: var(--green); }
+.diagram-hint-pill {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: rgba(12,59,44,.82); color: #d7f0e3; font-size: 12px;
+  padding: 5px 14px; border-radius: 999px; pointer-events: none;
+  transition: opacity .8s ease;
+}
+.diagram-hint-pill.fade { opacity: 0; }
+
 /* ── Request composer (global, wide slide-in panel) ──────────────────────────*/
 .composer-open-btn {
   position: fixed; bottom: 24px; right: 16px; padding: 10px 18px;

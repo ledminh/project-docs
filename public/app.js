@@ -248,7 +248,7 @@
     let html = '';
     // Stable, index-independent ids: slug of the heading text, deduped on collision.
     // An index-based id (sec-N-…) shifts whenever a heading is added or removed above
-    // the target, silently breaking every cross-link (e.g. from a What's New section).
+    // the target, silently breaking every cross-link (e.g. from the What's New section).
     const _seen = new Map();
     heads.forEach((h) => {
       const base = slugify(h.textContent);
@@ -308,10 +308,97 @@
       });
       const { svg } = await mermaid.render('pd-diagram-svg', d.content.trim());
       render.innerHTML = svg;
+      makeInteractive(render);
     } catch (e) {
       errEl.hidden = false;
       errEl.textContent = 'Diagram failed to render: ' + (e && e.message ? e.message : e);
     }
+  }
+
+  // Pan / zoom / fullscreen for the Diagram view.
+  function makeInteractive(render) {
+    const svgEl = render.querySelector('svg');
+    if (!svgEl) return;
+
+    // wrap the svg in a transformable stage inside a clipping viewport
+    render.classList.add('diagram-interactive');
+    const stage = document.createElement('div');
+    stage.className = 'diagram-stage';
+    stage.appendChild(svgEl);
+    render.appendChild(stage);
+
+    // controls
+    const bar = document.createElement('div');
+    bar.className = 'diagram-controls';
+    bar.innerHTML = `
+      <button data-act="in"  title="Zoom in">+</button>
+      <button data-act="out" title="Zoom out">−</button>
+      <button data-act="fit" title="Fit / reset (double-click also resets)">⤢</button>
+      <button data-act="full" title="Fullscreen">⛶</button>`;
+    render.appendChild(bar);
+    const hint = document.createElement('div');
+    hint.className = 'diagram-hint-pill';
+    hint.textContent = 'scroll to zoom · drag to pan';
+    render.appendChild(hint);
+    setTimeout(() => hint.classList.add('fade'), 3500);
+
+    let s = 1, tx = 0, ty = 0;
+    const MIN = 0.3, MAX = 5;
+    const apply = () => { stage.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`; };
+
+    function zoomAt(px, py, factor) {
+      const ns = Math.min(MAX, Math.max(MIN, s * factor));
+      if (ns === s) return;
+      tx = px - (px - tx) * (ns / s);
+      ty = py - (py - ty) * (ns / s);
+      s = ns; apply();
+    }
+    function center() {
+      const r = render.getBoundingClientRect();
+      return { x: r.width / 2, y: r.height / 2 };
+    }
+    function reset() { s = 1; tx = 0; ty = 0; apply(); }
+
+    render.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const r = render.getBoundingClientRect();
+      zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+    }, { passive: false });
+
+    let drag = null;
+    render.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.diagram-controls')) return;
+      drag = { x: e.clientX, y: e.clientY, tx, ty };
+      render.classList.add('dragging');
+      render.setPointerCapture(e.pointerId);
+    });
+    render.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      tx = drag.tx + (e.clientX - drag.x);
+      ty = drag.ty + (e.clientY - drag.y);
+      apply();
+    });
+    const endDrag = (e) => {
+      drag = null; render.classList.remove('dragging');
+      if (e.pointerId !== undefined) { try { render.releasePointerCapture(e.pointerId); } catch (_) {} }
+    };
+    render.addEventListener('pointerup', endDrag);
+    render.addEventListener('pointercancel', endDrag);
+    render.addEventListener('dblclick', (e) => { if (!e.target.closest('.diagram-controls')) reset(); });
+
+    bar.addEventListener('click', (e) => {
+      const act = e.target.closest('button')?.dataset.act;
+      if (!act) return;
+      const c = center();
+      if (act === 'in') zoomAt(c.x, c.y, 1.25);
+      else if (act === 'out') zoomAt(c.x, c.y, 1 / 1.25);
+      else if (act === 'fit') reset();
+      else if (act === 'full') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else render.requestFullscreen?.();
+      }
+    });
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) reset(); });
   }
 
   // Turn ```mermaid code blocks rendered by the viewer into actual SVG diagrams.
