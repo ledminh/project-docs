@@ -246,8 +246,15 @@
     const heads = viewerEl.querySelectorAll('h1, h2, h3');
     if (!heads.length) { toc.innerHTML = '<span class="rp-empty">No headings</span>'; return; }
     let html = '';
-    heads.forEach((h, i) => {
-      const id = 'sec-' + i + '-' + slugify(h.textContent);
+    // Stable, index-independent ids: slug of the heading text, deduped on collision.
+    // An index-based id (sec-N-…) shifts whenever a heading is added or removed above
+    // the target, silently breaking every cross-link (e.g. from a What's New section).
+    const _seen = new Map();
+    heads.forEach((h) => {
+      const base = slugify(h.textContent);
+      const n = _seen.get(base) || 0;
+      _seen.set(base, n + 1);
+      const id = n ? `${base}-${n}` : base;
       h.id = id;
       html += `<a class="toc-${h.tagName.toLowerCase()}" href="#${id}">${esc(h.textContent)}</a>`;
     });
