@@ -27,9 +27,10 @@
 
   // per-view ----------------------------------------------------------------------
   if (view === 'idea' || view === 'workflow') initEditor();
+  else if (view === 'whiteboard') initWhiteboard();
   else if (view === 'architecture') initArchitecture();
   else if (view === 'diagram') initDiagram();
-  else if (view === 'requests' || view === 'plans' || view === 'reports' || view === 'explainers') initCollection();
+  else if (view === 'plans' || view === 'reports') initCollection();
 
   // ── Request composer (global, wide slide-in panel) ───────────────────────────
   function initComposer() {
@@ -125,6 +126,59 @@
     });
   }
 
+  // ── Whiteboard (shared editable space; Edit ⇄ Preview) ───────────────────────
+  async function initWhiteboard() {
+    const editorEl = document.getElementById('editor');
+    const previewEl = document.getElementById('wb-preview');
+    if (!editorEl) return;
+    const saveBtn = document.getElementById('save-btn');
+    const statusEl = document.getElementById('save-status');
+    const editTab = document.getElementById('wb-edit-tab');
+    const previewTab = document.getElementById('wb-preview-tab');
+
+    let initial = '';
+    try { const d = await api('GET', '/api/doc/whiteboard'); initial = d.content || ''; } catch (_) {}
+
+    const editor = new toastui.Editor({
+      el: editorEl, height: 'auto', minHeight: '64vh',
+      initialEditType: 'wysiwyg', previewStyle: 'vertical',
+      initialValue: initial, usageStatistics: false,
+      placeholder: 'Sketch your thinking here — notes, questions, sketches. Ask Claude Code to draw diagrams and illustrations onto the board, then turn it into a plan.',
+    });
+
+    function setStatus(m, err) {
+      if (!statusEl) return;
+      statusEl.textContent = m; statusEl.classList.toggle('is-error', !!err);
+      if (!err) setTimeout(() => { statusEl.textContent = ''; }, 4000);
+    }
+    async function save() {
+      setStatus('Saving…');
+      try { await api('PUT', '/api/doc/whiteboard', { content: editor.getMarkdown() }); setStatus('Saved to docs/whiteboard.md.'); }
+      catch (e) { setStatus('Error: ' + e.message, true); }
+    }
+    if (saveBtn) saveBtn.addEventListener('click', save);
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
+    });
+
+    function showEdit() {
+      editTab.classList.add('is-active'); previewTab.classList.remove('is-active');
+      previewEl.hidden = true; editorEl.hidden = false;
+    }
+    function showPreview() {
+      previewTab.classList.add('is-active'); editTab.classList.remove('is-active');
+      editorEl.hidden = true; previewEl.hidden = false;
+      previewEl.innerHTML = '';                       // re-render fresh each time
+      const md = editor.getMarkdown().trim();
+      if (!md) { previewEl.innerHTML = '<p class="muted wb-preview-empty">Nothing on the board yet — switch to Edit and start sketching.</p>'; return; }
+      const inner = document.createElement('div');
+      previewEl.appendChild(inner);
+      renderDoc(inner, md);
+    }
+    if (editTab) editTab.addEventListener('click', showEdit);
+    if (previewTab) previewTab.addEventListener('click', showPreview);
+  }
+
   // ── Architecture (read-only render + auto-TOC) ───────────────────────────────
   async function initArchitecture() {
     const viewerEl = document.getElementById('viewer');
@@ -214,8 +268,6 @@
     function chips(t) {
       let html = '';
       if (t.status) html += `<span class="status-chip status-${esc(t.status)}">${esc(t.status)}</span>`;
-      if (t.ticket) html += `<span class="status-chip status-open">ticket ${esc(t.ticket)}</span>`;
-      if (t.request) html += `<span class="status-chip status-open">request ${esc(t.request)}</span>`;
       return html;
     }
 
@@ -251,7 +303,7 @@
         return;
       }
       document.title = d.title + ' — ' + (PD.colLabel || 'Documents');
-      const refs = [d.date, d.author, d.status, d.ticket && ('ticket ' + d.ticket), d.request && ('request ' + d.request)]
+      const refs = [d.date, d.author, d.status]
         .filter(Boolean).map(esc).join(' · ');
       document.getElementById('col-meta').innerHTML = `
         <h1 class="report-title-big">${esc(d.title)}</h1>
@@ -296,6 +348,7 @@
 
   function buildToc(viewerEl) {
     const toc = document.getElementById('arch-toc');
+    if (!toc) return;
     const heads = viewerEl.querySelectorAll('h1, h2, h3');
     if (!heads.length) { toc.innerHTML = '<span class="rp-empty">No headings</span>'; return; }
     let html = '';

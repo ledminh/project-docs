@@ -1,18 +1,17 @@
 # Project Docs
 
 Local, per-project documentation app and a shared control surface between you and Claude Code.
-The working pipeline: **you write a Request → Claude writes a Plan → Claude implements it → Claude
-writes a Report.**
+The working pipeline: **you and Claude discuss on the Whiteboard → Claude writes a Plan → Claude
+implements it → Claude writes a Report.**
 
-Seven views:
+Six views:
 
 - **Workflow** — WYSIWYG markdown editor, saved to `docs/workflow.md` (editable by you).
+- **Whiteboard** — a shared, editable thinking space (`docs/whiteboard.md`). You sketch ideas and
+  questions; Claude Code edits the same file and can draw diagrams, illustrations, callouts, and math
+  onto it. An **Edit ⇄ Preview** toggle renders Claude's diagrams/math. Editable by both.
 - **Diagram** — read-only Mermaid render of `docs/diagram.mmd` (Claude Code writes it; empty until generated).
 - **Architecture** — read-only render of `docs/architecture.md` with auto-TOC + scroll-spy (Claude Code writes it).
-- **Explainers** — rich, illustrated explanations Claude Code writes when a concept is too complex
-  for the chat window: Mermaid diagrams, GitHub-style callouts, and KaTeX math. Read-only; `docs/explainers/`.
-- **Requests** — what you want built. Written in the global **✎ New request** composer (a wide
-  slide-in panel available on every view), saved to `docs/requests/`.
 - **Plans** — Claude Code's implementation plans (current state, the change & why, step-by-step,
   test suite, before/after Mermaid diagrams). Read-only; `docs/plans/`.
 - **Reports** — long-form work reports written when a task is finished (what/why/dataflow). Read-only; `docs/reports/`.
@@ -22,18 +21,17 @@ Content is **files-first** — everything lives in the host project as plain tex
 ```
 <project>/docs/idea.md            # idea capture (editable)
 <project>/docs/workflow.md        # Workflow view (editable)
+<project>/docs/whiteboard.md      # Whiteboard — shared, editable by you AND Claude Code
 <project>/docs/architecture.md    # read-only in UI; Claude Code edits
 <project>/docs/diagram.mmd        # read-only in UI; Claude Code edits
-<project>/docs/explainers/*.md    # Claude Code's illustrated explainers (read-only in UI)
-<project>/docs/assets/*           # images referenced by explainers (served at /assets)
-<project>/docs/requests/*.md      # your requests (composer writes these)
+<project>/docs/assets/*           # images Claude Code draws onto the whiteboard (served at /assets)
 <project>/docs/plans/*.md         # Claude Code's plans (read-only in UI)
 <project>/docs/reports/*.md       # Claude Code's reports (read-only in UI)
 <project>/.claude/project-docs.md # the Claude Code integration contract (tracked)
 ```
 
-Files in `requests/`, `plans/`, `reports/`, and `explainers/` are named `YYYY-MM-DD-NN-slug.md` —
-`NN` is a per-day sequence so same-day documents stay distinct and every list shows newest first.
+Files in `plans/` and `reports/` are named `YYYY-MM-DD-NN-slug.md` — `NN` is a per-day sequence so
+same-day documents stay distinct and every list shows newest first.
 
 `.project-docs/` is the installed app and is fully gitignored — one folder, one purpose. The
 contract lives in `.claude/project-docs.md` (with your other Claude config). Title defaults to the
@@ -54,10 +52,9 @@ contains `.project-docs/`**. Set `PROJECT_ROOT=/abs/path` to point anywhere else
 
 - First visit with no `docs/workflow.md` → the **idea capture** editor. Save writes `docs/idea.md`.
 - Once `docs/workflow.md` exists → `/` lands on the **Workflow** editor.
-- The **✎ New request** button (bottom right, every view) opens the composer — a ~1/3-screen
-  WYSIWYG panel. Save creates `docs/requests/YYYY-MM-DD-NN-slug.md` (title taken from your first
-  heading or line).
-- Then in Claude Code: *"draft a plan for the latest request"* → a plan appears in **Plans**;
+- Open **Whiteboard** to think alongside Claude Code: type your notes, ask it to draw diagrams or
+  explain a concept onto the board, and flip to **Preview** to see it rendered. Saved to `docs/whiteboard.md`.
+- Then in Claude Code: *"turn the whiteboard into a plan"* → a plan appears in **Plans**;
   *"implement the plan"* → work happens; a report appears in **Reports**.
 
 ## Scaffolding into a project
@@ -67,7 +64,7 @@ contains `.project-docs/`**. Set `PROJECT_ROOT=/abs/path` to point anywhere else
 ```bash
 cd .project-docs
 npm install
-npm run setup      # creates docs/ (+requests/plans/reports), .claude/project-docs.md; wires root CLAUDE.md
+npm run setup      # creates docs/ (+plans/reports), .claude/project-docs.md; wires root CLAUDE.md
 npm start          # → http://localhost:4500
 ```
 
@@ -90,6 +87,7 @@ To set this up, run the `docs-init` skill.
 ## Claude Code integration contract
 
 After setup, `.claude/project-docs.md` tells Claude Code: which files map to which views, the
-`YYYY-MM-DD-NN-slug.md` naming, how to turn a request into a plan (required sections incl.
-before/after diagrams and a test suite), to implement plans step by step with status tracking,
-and to write a long-form what/why/dataflow report whenever work finishes.
+`YYYY-MM-DD-NN-slug.md` naming, how to use the whiteboard to explain things visually, how to turn a
+whiteboard discussion into a plan (required sections incl. before/after diagrams and a test suite),
+to implement plans step by step with status tracking, and to write a long-form what/why/dataflow
+report whenever work finishes.

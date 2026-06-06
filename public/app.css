@@ -59,6 +59,38 @@ body {
 .save-status { color: var(--muted); font-size: 13px; }
 .save-status.is-error { color: var(--danger); }
 
+/* ── Whiteboard (shared editable canvas) ─────────────────────────────────────*/
+.whiteboard-view { max-width: 1120px; margin: 0 auto; }
+.wb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.wb-title { position: relative; display: inline-block; }
+.wb-title::after { content: ""; position: absolute; left: -2px; right: -6px; bottom: 3px; height: 9px; background: var(--green-soft); border-radius: 5px; transform: rotate(-1.2deg); z-index: -1; opacity: .85; }
+.wb-tools { display: flex; align-items: center; gap: 12px; }
+.wb-toggle { display: inline-flex; background: #e9efeb; border-radius: 9px; padding: 3px; gap: 2px; }
+.wb-tab { border: 0; background: transparent; padding: 6px 14px; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 600; color: #5a6b64; cursor: pointer; }
+.wb-tab:hover { color: var(--green-ink); }
+.wb-tab.is-active { background: #fff; color: var(--green-ink); box-shadow: 0 1px 3px rgba(12,59,44,.16); }
+
+.wb-canvas {
+  position: relative; margin-top: 16px; border-radius: 16px; padding: 10px; min-height: 64vh;
+  background-color: #fcfcf6;
+  background-image: radial-gradient(circle, rgba(12,59,44,.11) 1.1px, transparent 1.3px);
+  background-size: 22px 22px; background-position: 14px 14px;
+  border: 1px solid #e3ebe5;
+  box-shadow: 0 18px 40px -26px rgba(12,59,44,.5), inset 0 0 0 1px rgba(255,255,255,.7);
+}
+/* Let the dotted board show through the editing surface */
+.whiteboard-view #editor { background: transparent; border: 0; border-radius: 12px; overflow: visible; }
+.wb-canvas .toastui-editor-defaultUI { border: 0; background: transparent; }
+.wb-canvas .toastui-editor-defaultUI-toolbar { background: rgba(255,255,255,.72); border: 0; border-radius: 12px 12px 0 0; backdrop-filter: blur(3px); }
+.wb-canvas .toastui-editor-ww-container, .wb-canvas .toastui-editor-md-container { background: transparent; }
+.wb-canvas .toastui-editor-ww-container .toastui-editor-contents,
+.wb-canvas .ProseMirror { background: transparent; }
+.wb-canvas .toastui-editor-main .toastui-editor-md-preview { background: rgba(255,255,255,.55); }
+
+.wb-preview { background: transparent; padding: 14px 22px 8px; }
+.wb-preview .toastui-editor-contents { background: transparent; }
+.wb-preview-empty { padding: 30px 8px; }
+
 /* ── Buttons ─────────────────────────────────────────────────────────────────*/
 .btn-primary { padding: 8px 18px; background: var(--green); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: var(--green-dk); }

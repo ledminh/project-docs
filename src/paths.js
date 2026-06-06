@@ -15,20 +15,18 @@ if (path.basename(defaultRoot) === '.project-docs') defaultRoot = path.dirname(d
 const ROOT = path.resolve(process.env.PROJECT_ROOT || defaultRoot);
 
 const DOCS_DIR     = path.join(ROOT, 'docs');
-const REQUESTS_DIR = path.join(DOCS_DIR, 'requests'); // user's requests/brainstorms — one file each
 const PLANS_DIR    = path.join(DOCS_DIR, 'plans');    // AI-written plans — one file each
-const REPORTS_DIR    = path.join(DOCS_DIR, 'reports');    // AI work reports — one file each
-const EXPLAINERS_DIR = path.join(DOCS_DIR, 'explainers'); // rich illustrated explanations — one file each
-const DIAGRAMS_DIR   = path.join(DOCS_DIR, 'diagrams');   // per-node detail diagrams (.mmd) for drill-down
-const ASSETS_DIR     = path.join(DOCS_DIR, 'assets');     // images referenced by docs (served at /assets)
-const CLAUDE_DIR     = path.join(ROOT, '.claude'); // the contract lives here (tracked)
+const REPORTS_DIR  = path.join(DOCS_DIR, 'reports');  // AI work reports — one file each
+const DIAGRAMS_DIR = path.join(DOCS_DIR, 'diagrams'); // per-node detail diagrams (.mmd) for drill-down
+const ASSETS_DIR   = path.join(DOCS_DIR, 'assets');   // images referenced by docs (served at /assets)
+const CLAUDE_DIR   = path.join(ROOT, '.claude'); // the contract lives here (tracked)
 
 // Only ever auto-create content dirs. The app folder (.project-docs/) and .claude/ are
 // managed by the scaffold, not created on every boot.
 function ensureDirs() {
-  for (const d of [DOCS_DIR, REQUESTS_DIR, PLANS_DIR, REPORTS_DIR, EXPLAINERS_DIR, DIAGRAMS_DIR, ASSETS_DIR]) {
+  for (const d of [DOCS_DIR, PLANS_DIR, REPORTS_DIR, DIAGRAMS_DIR, ASSETS_DIR]) {
     if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
   }
 }
 
-module.exports = { ROOT, DOCS_DIR, REQUESTS_DIR, PLANS_DIR, REPORTS_DIR, EXPLAINERS_DIR, DIAGRAMS_DIR, ASSETS_DIR, CLAUDE_DIR, ensureDirs };
+module.exports = { ROOT, DOCS_DIR, PLANS_DIR, REPORTS_DIR, DIAGRAMS_DIR, ASSETS_DIR, CLAUDE_DIR, ensureDirs };

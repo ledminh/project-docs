@@ -20,12 +20,13 @@ const CONTRACT = `# Project Docs — conventions for Claude Code
 This project uses the **Project Docs** app (in \`.project-docs/\`). It surfaces six views backed by
 plain files. The working pipeline is:
 
-**the user writes a REQUEST → you write a PLAN → you IMPLEMENT it step by step → you write a REPORT.**
+**you and the user discuss on the WHITEBOARD → you turn it into a PLAN → you IMPLEMENT it step by step → you write a REPORT.**
 
 ## Files
 
 - \`docs/idea.md\` — the user's initial idea capture. User-editable.
 - \`docs/workflow.md\` — how the app/feature should work. User-editable; you may populate it on request.
+- \`docs/whiteboard.md\` — the **shared thinking space**. Both you and the user edit it. **See below.**
 - \`docs/architecture.md\` — current architecture. **Read-only in the UI — you maintain this file.**
 - \`docs/diagram.mmd\` — the system overview Mermaid diagram. **Read-only in the UI — you maintain it.**
 - \`docs/diagrams/<node-id>.mmd\` — optional **detail** diagrams (drill-down). A node becomes clickable
@@ -38,35 +39,35 @@ plain files. The working pipeline is:
   keep every detail diagram accurate to the code. **Prefer structural "what contains what" diagrams**
   (components, modules, files, fields) — the user reads these as a reference map of the codebase, not a
   trace. Use sequence/behavioral diagrams sparingly, only when the runtime flow itself is the point.
-- \`docs/requests/\` — what the user wants built, written in the app's composer. **You read these.**
 - \`docs/plans/\` — your implementation plans. **Read-only in the UI — you write these.**
 - \`docs/reports/\` — your work reports. **Read-only in the UI — you write these.**
-- \`docs/explainers/\` — rich illustrated explanations. **Read-only in the UI — you write these.** See below.
 
-## Explainers — \`docs/explainers/\`
+## Whiteboard — \`docs/whiteboard.md\`
 
-When the user asks you to explain something and it's **complex enough that a wall of chat text would be
-hard to follow**, don't dump it in the chat — write an **explainer** to
-\`docs/explainers/YYYY-MM-DD-NN-<slug>.md\` and tell the user to open the Explainers view. Frontmatter:
-\`title\`, \`date\`, \`author\`, \`summary\`. Make it visual and skimmable:
+This is where you and the user think together before any plan exists. The user sketches notes and
+questions in the app (WYSIWYG); you edit the same file. The view has an **Edit ⇄ Preview** toggle —
+Preview renders your diagrams, callouts, and math, so it's the place to **explain difficult concepts
+visually** instead of dumping a wall of text in the chat. When the user asks you to explain, illustrate,
+or sketch something, write it onto the whiteboard and tell them to open Preview. You can use:
 
-- **Mermaid diagrams** wherever a picture helps (they render + pan/zoom in the app). This is the main tool.
+- **Mermaid diagrams** wherever a picture helps (they render + pan/zoom in Preview). Your main tool.
 - **Callouts** for key points: \`> [!NOTE]\`, \`> [!TIP]\`, \`> [!WARNING]\`, \`> [!IMPORTANT]\`, \`> [!CAUTION]\`.
 - **Math** with KaTeX: inline \`$…$\` and display \`\`\`math fenced blocks.
 - **Images** via \`![alt](assets/<file>)\` — drop the file in \`docs/assets/\` (served at \`/assets\`).
-- Headings (the app builds a table of contents), short sections, tables, and code blocks.
+- Headings, short sections, tables, and code blocks.
 
-Prefer showing structure and intuition over prose. Explainers accumulate as a browsable knowledge base.
+The whiteboard is a living scratchpad — it's fine to clear or rewrite it as the discussion moves on.
+When the discussion has settled, the user will ask you to **turn the whiteboard into a plan**.
 
 ## File naming — \`YYYY-MM-DD-NN-<slug>.md\`
 
-Every file in \`requests/\`, \`plans/\`, \`reports/\`, and \`explainers/\` uses this name format. \`NN\` is a 2-digit
-per-day sequence: before writing, look at the folder, find today's highest \`NN\`, and use the next
-one (01 if none). This keeps same-day documents distinct and sorted newest-first in the app.
+Every file in \`plans/\` and \`reports/\` uses this name format. \`NN\` is a 2-digit per-day sequence:
+before writing, look at the folder, find today's highest \`NN\`, and use the next one (01 if none).
+This keeps same-day documents distinct and sorted newest-first in the app.
 
 ## Plans — \`docs/plans/\`
 
-When the user asks you to **plan a request**, read the request file and write a plan with this
+When the user asks you to **turn the whiteboard discussion into a plan**, write a plan with this
 frontmatter:
 
 \`\`\`
@@ -74,7 +75,6 @@ frontmatter:
 title: "Short descriptive title"
 date: "YYYY-MM-DD"
 author: "Claude Code"
-request: "YYYY-MM-DD-NN-the-request-file.md"
 status: "draft"
 ---
 \`\`\`
@@ -94,7 +94,7 @@ frontmatter current: \`draft\` → \`in-progress\` → \`implemented\`.
 
 **Whenever you finish a piece of work — planned or ad-hoc — write a report** before considering
 the work done. Frontmatter: \`title\`, \`date\`, \`author\`, \`summary\` (one sentence), and optionally
-\`request:\` / \`plan:\` referencing the files that drove the work.
+\`plan:\` referencing the plan that drove the work.
 
 The body is **long-form and educational** — the user reads reports to understand the codebase and
 to practice reading. Structure it with \`##\` sections covering:
@@ -104,8 +104,8 @@ to practice reading. Structure it with \`##\` sections covering:
 3. **How the data flows** — walk through the runtime path of the code you wrote or changed,
    step by step. Include Mermaid diagrams where they help (they render in the app).
 
-Write thoroughly; length is welcome. Never delete or rewrite existing reports, plans, or requests —
-add new files.
+Write thoroughly; length is welcome. Never delete or rewrite existing reports or plans — add new
+files. (The whiteboard is the one exception: it's a scratchpad and may be rewritten freely.)
 
 ## Populating views
 
@@ -147,7 +147,7 @@ function main() {
   const rel = p => path.relative(ROOT, p) || '.';
   console.log('Project Docs scaffold complete.');
   console.log('  project root      : ' + ROOT);
-  console.log('  docs/             : ' + rel(DOCS_DIR) + ' (+ requests/, plans/, reports/)');
+  console.log('  docs/             : ' + rel(DOCS_DIR) + ' (+ plans/, reports/)');
   console.log('  contract          : ' + rel(contractPath) + (wroteContract ? ' (written)' : ' (unchanged)'));
   console.log('  root CLAUDE.md    : ' + rootStatus);
   console.log('');

@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
-const { ROOT, REQUESTS_DIR, PLANS_DIR, REPORTS_DIR, EXPLAINERS_DIR, ASSETS_DIR, ensureDirs } = require('./paths');
+const { ROOT, PLANS_DIR, REPORTS_DIR, ASSETS_DIR, ensureDirs } = require('./paths');
 const { readDoc } = require('./files');
 const docsRouter = require('./routes/docs');
 const collectionRouter = require('./routes/collection');
@@ -18,12 +18,10 @@ const TMPL = path.join(__dirname, 'template.html');
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
-app.use('/assets', express.static(ASSETS_DIR));   // images referenced by docs/explainers
+app.use('/assets', express.static(ASSETS_DIR));   // images Claude Code draws onto the whiteboard
 app.use('/api/doc', docsRouter);
-app.use('/api/requests', collectionRouter(REQUESTS_DIR, { writable: true }));
 app.use('/api/plans', collectionRouter(PLANS_DIR));
 app.use('/api/reports', collectionRouter(REPORTS_DIR));
-app.use('/api/explainers', collectionRouter(EXPLAINERS_DIR));
 app.use('/api/diagrams', diagramsRouter);
 
 // ── Config API ───────────────────────────────────────────────────────────────
@@ -32,7 +30,7 @@ app.get('/api/config', (_req, res) => {
 });
 
 // ── Views ─────────────────────────────────────────────────────────────────────
-const VIEWS = ['workflow', 'diagram', 'architecture', 'explainers', 'requests', 'plans', 'reports'];
+const VIEWS = ['workflow', 'whiteboard', 'diagram', 'architecture', 'plans', 'reports'];
 function title() { return TITLE; }
 
 // Landing: empty-state idea capture until workflow.md exists, then Workflow.
@@ -61,6 +59,37 @@ app.get('/workflow', (_req, res) => {
     heading: 'Workflow',
     hint: 'How this app / feature should work. Editable — saved to docs/workflow.md.',
     afterSaveHint: 'Saved to docs/workflow.md.', centered: false,
+  }));
+});
+
+// Whiteboard — a shared, editable thinking space (docs/whiteboard.md). You and Claude Code
+// both write here. Edit in WYSIWYG; flip to Preview to see Claude Code's diagrams / callouts / math.
+app.get('/whiteboard', (_req, res) => {
+  const content = `
+  <section class="whiteboard-view" data-view="whiteboard">
+    <header class="view-head wb-head">
+      <div>
+        <h1 class="wb-title">Whiteboard</h1>
+        <p class="view-hint">Your shared thinking space with Claude Code — sketch ideas, ask it to draw diagrams and illustrations, then turn the discussion into a plan. Saved to <code>docs/whiteboard.md</code>.</p>
+      </div>
+      <div class="wb-tools">
+        <div class="wb-toggle" role="tablist">
+          <button id="wb-edit-tab" class="wb-tab is-active" type="button">✎ Edit</button>
+          <button id="wb-preview-tab" class="wb-tab" type="button">◉ Preview</button>
+        </div>
+        <span id="save-status" class="save-status"></span>
+        <button id="save-btn" class="btn-primary">Save</button>
+      </div>
+    </header>
+    <div class="wb-canvas">
+      <div id="editor" class="wb-editor"></div>
+      <div id="wb-preview" class="doc-viewer wb-preview" hidden></div>
+    </div>
+  </section>`;
+  res.send(shell({
+    viewLabel: 'Whiteboard', active: 'whiteboard', content,
+    pd: { view: 'whiteboard', docName: 'whiteboard', writable: true },
+    headExtra: DOC_HEAD,
   }));
 });
 
@@ -104,31 +133,19 @@ app.get('/diagram', (_req, res) => {
   res.send(shell({ viewLabel: 'Diagram', active: 'diagram', content, pd: { view: 'diagram', docName: 'diagram' }, headExtra: MERMAID }));
 });
 
-// ── Collections: Requests / Plans / Reports (index + reader) ─────────────────
+// ── Collections: Plans / Reports (index + reader) ────────────────────────────
 const COLLECTIONS = {
-  requests: {
-    label: 'Requests',
-    hint: 'What you want built or changed — written in the composer (✎, bottom right), saved to <code>docs/requests/</code>. Ask Claude Code to turn a request into a plan.',
-    empty: `<p><strong>No requests yet.</strong></p>
-            <p>Open the composer with the <strong>✎ New request</strong> button (any view) and write what you want.</p>`,
-  },
   plans: {
     label: 'Plans',
     hint: 'Claude Code’s implementation plans — current state, the change &amp; why, step-by-step, test suite, and before/after diagrams. Read-only; files live in <code>docs/plans/</code>.',
     empty: `<p><strong>No plans yet.</strong></p>
-            <p>Write a request, then ask Claude Code: <em>“draft a plan for request …”</em> — it writes the plan here.</p>`,
+            <p>Discuss on the <strong>Whiteboard</strong>, then ask Claude Code: <em>“turn the whiteboard into a plan”</em> — it writes the plan here.</p>`,
   },
   reports: {
     label: 'Reports',
     hint: 'Work reports written when a task is finished — what was done, the reasoning, and how the data flows. Read-only; files live in <code>docs/reports/</code>.',
     empty: `<p><strong>No reports yet.</strong></p>
-            <p>When Claude Code (or any AI) finishes a piece of work, it writes a report to <code>docs/reports/</code>.</p>`,
-  },
-  explainers: {
-    label: 'Explainers',
-    hint: 'Rich, illustrated explanations Claude Code writes when something is too complex for the chat window — diagrams, callouts, math. Read-only; files live in <code>docs/explainers/</code>.',
-    empty: `<p><strong>No explainers yet.</strong></p>
-            <p>In Claude Code, ask: <em>“explain X as an explainer”</em> — it writes an illustrated doc here (diagrams, callouts, math).</p>`,
+            <p>When Claude Code finishes implementing a plan, it writes a report to <code>docs/reports/</code>.</p>`,
   },
 };
 
@@ -158,14 +175,15 @@ for (const [view, c] of Object.entries(COLLECTIONS)) {
   });
 }
 
-// The retired Tickets view → Requests.
-app.get('/tickets', (_req, res) => res.redirect('/requests'));
+// Retired views → Whiteboard (the new collaboration surface).
+['/tickets', '/requests', '/explainers'].forEach((p) =>
+  app.get(p, (_req, res) => res.redirect('/whiteboard')));
 
 // ── Page assembly ───────────────────────────────────────────────────────────
 const MERMAID = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>`;
 const KATEX = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>`;
-const DOC_HEAD = MERMAID + '\n    ' + KATEX;   // doc-rendering pages (architecture, explainers, reports, …)
+const DOC_HEAD = MERMAID + '\n    ' + KATEX;   // doc-rendering pages (whiteboard preview, architecture, reports, …)
 
 function navLinks(active) {
   return VIEWS.map(v => {
@@ -173,25 +191,6 @@ function navLinks(active) {
     const cls = v === active ? ' class="nav-active"' : '';
     return `<a href="/${v}"${cls}>${label}</a>`;
   }).join('\n      ');
-}
-
-// Global Request composer — a wide slide-in panel, available on every view.
-function composerHtml() {
-  return `<button id="composer-open" class="composer-open-btn" title="Write a new request">✎ New request</button>
-    <aside id="composer">
-      <div class="composer-head">
-        <div>
-          <div class="composer-title">New request</div>
-          <div class="composer-hint">Brainstorm freely — saved to <code>docs/requests/</code>, then ask Claude Code for a plan.</div>
-        </div>
-        <button id="composer-close" class="rp-close-btn" title="Close">×</button>
-      </div>
-      <div id="composer-editor"></div>
-      <div class="composer-actions">
-        <span id="composer-status" class="save-status"></span>
-        <button id="composer-save" class="btn-primary">Save request</button>
-      </div>
-    </aside>`;
 }
 
 function shell({ viewLabel, active, content, pd, headExtra = '' }) {
@@ -202,7 +201,7 @@ function shell({ viewLabel, active, content, pd, headExtra = '' }) {
     .replace('{{HEAD_EXTRA}}', headExtra)
     .replace('{{NAV_LINKS}}', navLinks(active))
     .replace('{{CONTENT}}', content)
-    .replace('{{RIGHT_PANEL}}', composerHtml())
+    .replace('{{RIGHT_PANEL}}', '')
     .replace('{{PD_JSON}}', JSON.stringify(pd));
 }
 

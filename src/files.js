@@ -8,6 +8,7 @@ const { DOCS_DIR, ensureDirs } = require('./paths');
 const DOCS = {
   idea:         { file: 'idea.md',         writable: true  },
   workflow:     { file: 'workflow.md',     writable: true  },
+  whiteboard:   { file: 'whiteboard.md',   writable: true  }, // shared: user + Claude Code
   architecture: { file: 'architecture.md', writable: false }, // Claude Code only
   diagram:      { file: 'diagram.mmd',     writable: false }, // Claude Code only
 };
