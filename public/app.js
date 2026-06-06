@@ -178,6 +178,10 @@
     if (editTab) editTab.addEventListener('click', showEdit);
     if (previewTab) previewTab.addEventListener('click', showPreview);
 
+    // Land on Preview when the board already has content — that's where diagrams, callouts and
+    // math render, so you see Claude Code's drawings right away. Start in Edit on an empty board.
+    if (initial.trim()) showPreview(); else showEdit();
+
     // Fullscreen the whole view (keeps the toolbar reachable inside fullscreen).
     const fullBtn = document.getElementById('wb-full');
     const wbView = document.querySelector('.whiteboard-view');
