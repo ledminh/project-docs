@@ -173,10 +173,15 @@
   // KaTeX math: ```math fenced blocks (display) and inline $…$
   function renderMath(root) {
     if (typeof katex === 'undefined') return;
-    root.querySelectorAll('pre code.language-math, pre code.lang-math').forEach((code) => {
+    // Toast UI renders ```math as <pre class="lang-math"><code data-language="math">…</code></pre>
+    // (the language class sits on the <pre>, not the <code>).
+    root.querySelectorAll('pre.lang-math, pre.language-math, pre code[data-language="math"]').forEach((el) => {
+      const pre = el.tagName === 'PRE' ? el : el.closest('pre');
+      if (!pre || !pre.isConnected) return;
+      const code = pre.querySelector('code') || pre;
       const div = document.createElement('div');
       div.className = 'math-block';
-      try { katex.render(code.textContent.trim(), div, { displayMode: true, throwOnError: false }); code.closest('pre').replaceWith(div); } catch (_) {}
+      try { katex.render(code.textContent.trim(), div, { displayMode: true, throwOnError: false }); pre.replaceWith(div); } catch (_) {}
     });
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode: (n) => (n.parentElement && n.parentElement.closest('pre, code, .katex, .math-block'))
