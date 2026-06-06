@@ -177,6 +177,21 @@
     }
     if (editTab) editTab.addEventListener('click', showEdit);
     if (previewTab) previewTab.addEventListener('click', showPreview);
+
+    // Fullscreen the whole view (keeps the toolbar reachable inside fullscreen).
+    const fullBtn = document.getElementById('wb-full');
+    const wbView = document.querySelector('.whiteboard-view');
+    if (fullBtn && wbView) {
+      fullBtn.addEventListener('click', () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else wbView.requestFullscreen?.();
+      });
+      document.addEventListener('fullscreenchange', () => {
+        const on = document.fullscreenElement === wbView;
+        fullBtn.textContent = on ? '⤡' : '⛶';
+        fullBtn.title = on ? 'Exit fullscreen' : 'Fullscreen';
+      });
+    }
   }
 
   // ── Architecture (read-only render + auto-TOC) ───────────────────────────────

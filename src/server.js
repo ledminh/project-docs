@@ -78,6 +78,7 @@ app.get('/whiteboard', (_req, res) => {
           <button id="wb-preview-tab" class="wb-tab" type="button">◉ Preview</button>
         </div>
         <span id="save-status" class="save-status"></span>
+        <button id="wb-full" class="wb-iconbtn" type="button" title="Fullscreen">⛶</button>
         <button id="save-btn" class="btn-primary">Save</button>
       </div>
     </header>
