@@ -194,6 +194,10 @@ function navLinks(active) {
   }).join('\n      ');
 }
 
+// Cache-bust the local CSS/JS on every server start, so a restart always serves fresh assets
+// (no more "I refreshed but nothing changed" from a stale browser cache).
+const ASSET_V = Date.now();
+
 function shell({ viewLabel, active, content, pd, headExtra = '' }) {
   const tmpl = fs.readFileSync(TMPL, 'utf8');
   return tmpl
@@ -203,7 +207,9 @@ function shell({ viewLabel, active, content, pd, headExtra = '' }) {
     .replace('{{NAV_LINKS}}', navLinks(active))
     .replace('{{CONTENT}}', content)
     .replace('{{RIGHT_PANEL}}', '')
-    .replace('{{PD_JSON}}', JSON.stringify(pd));
+    .replace('{{PD_JSON}}', JSON.stringify(pd))
+    .replace('/app.css"', '/app.css?v=' + ASSET_V + '"')
+    .replace('/app.js"', '/app.js?v=' + ASSET_V + '"');
 }
 
 function renderEditorView(o) {
