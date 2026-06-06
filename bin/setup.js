@@ -41,10 +41,26 @@ plain files. The working pipeline is:
 - \`docs/requests/\` — what the user wants built, written in the app's composer. **You read these.**
 - \`docs/plans/\` — your implementation plans. **Read-only in the UI — you write these.**
 - \`docs/reports/\` — your work reports. **Read-only in the UI — you write these.**
+- \`docs/explainers/\` — rich illustrated explanations. **Read-only in the UI — you write these.** See below.
+
+## Explainers — \`docs/explainers/\`
+
+When the user asks you to explain something and it's **complex enough that a wall of chat text would be
+hard to follow**, don't dump it in the chat — write an **explainer** to
+\`docs/explainers/YYYY-MM-DD-NN-<slug>.md\` and tell the user to open the Explainers view. Frontmatter:
+\`title\`, \`date\`, \`author\`, \`summary\`. Make it visual and skimmable:
+
+- **Mermaid diagrams** wherever a picture helps (they render + pan/zoom in the app). This is the main tool.
+- **Callouts** for key points: \`> [!NOTE]\`, \`> [!TIP]\`, \`> [!WARNING]\`, \`> [!IMPORTANT]\`, \`> [!CAUTION]\`.
+- **Math** with KaTeX: inline \`$…$\` and display \`\`\`math fenced blocks.
+- **Images** via \`![alt](assets/<file>)\` — drop the file in \`docs/assets/\` (served at \`/assets\`).
+- Headings (the app builds a table of contents), short sections, tables, and code blocks.
+
+Prefer showing structure and intuition over prose. Explainers accumulate as a browsable knowledge base.
 
 ## File naming — \`YYYY-MM-DD-NN-<slug>.md\`
 
-Every file in \`requests/\`, \`plans/\`, and \`reports/\` uses this name format. \`NN\` is a 2-digit
+Every file in \`requests/\`, \`plans/\`, \`reports/\`, and \`explainers/\` uses this name format. \`NN\` is a 2-digit
 per-day sequence: before writing, look at the folder, find today's highest \`NN\`, and use the next
 one (01 if none). This keeps same-day documents distinct and sorted newest-first in the app.
 

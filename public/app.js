@@ -29,7 +29,7 @@
   if (view === 'idea' || view === 'workflow') initEditor();
   else if (view === 'architecture') initArchitecture();
   else if (view === 'diagram') initDiagram();
-  else if (view === 'requests' || view === 'plans' || view === 'reports') initCollection();
+  else if (view === 'requests' || view === 'plans' || view === 'reports' || view === 'explainers') initCollection();
 
   // ── Request composer (global, wide slide-in panel) ───────────────────────────
   function initComposer() {
@@ -146,8 +146,56 @@
       addHeadingAnchors(viewerEl);
       setupTocSpy(viewerEl);
       badgeStatuses(viewerEl);
+      styleCallouts(viewerEl);
+      renderMath(viewerEl);
       await renderArchMermaid(viewerEl);
       if (animate) setupReveal(viewerEl);
+    });
+  }
+
+  // GitHub-style callouts: `> [!NOTE] / [!TIP] / [!WARNING] / [!IMPORTANT] / [!CAUTION]`
+  function styleCallouts(root) {
+    const types = ['note', 'tip', 'warning', 'important', 'caution'];
+    root.querySelectorAll('blockquote').forEach((bq) => {
+      const m = (bq.textContent || '').match(/^\s*\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]/i);
+      if (!m) return;
+      const type = m[1].toLowerCase();
+      bq.classList.add('callout', 'callout-' + type);
+      const first = bq.querySelector('p') || bq;
+      first.innerHTML = first.innerHTML.replace(/\[!(?:NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*(<br\s*\/?>)?/i, '');
+      const title = document.createElement('div');
+      title.className = 'callout-title';
+      title.textContent = type.toUpperCase();
+      bq.insertBefore(title, bq.firstChild);
+    });
+  }
+
+  // KaTeX math: ```math fenced blocks (display) and inline $…$
+  function renderMath(root) {
+    if (typeof katex === 'undefined') return;
+    root.querySelectorAll('pre code.language-math, pre code.lang-math').forEach((code) => {
+      const div = document.createElement('div');
+      div.className = 'math-block';
+      try { katex.render(code.textContent.trim(), div, { displayMode: true, throwOnError: false }); code.closest('pre').replaceWith(div); } catch (_) {}
+    });
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (n.parentElement && n.parentElement.closest('pre, code, .katex, .math-block'))
+        ? NodeFilter.FILTER_REJECT
+        : (/\$[^$\n]+\$/.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP),
+    });
+    const targets = []; let n;
+    while ((n = walker.nextNode())) targets.push(n);
+    targets.forEach((node) => {
+      const frag = document.createDocumentFragment();
+      const s = node.nodeValue; const re = /\$([^$\n]+)\$/g; let last = 0, m;
+      while ((m = re.exec(s))) {
+        if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+        const span = document.createElement('span');
+        try { katex.render(m[1], span, { throwOnError: false }); } catch (_) { span.textContent = m[0]; }
+        frag.appendChild(span); last = re.lastIndex;
+      }
+      if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+      node.parentNode.replaceChild(frag, node);
     });
   }
 
@@ -290,29 +338,100 @@
     setTimeout(() => items.forEach((el) => el.classList.add('revealed')), 2500);
   }
 
-  // ── Diagram (read-only Mermaid) ──────────────────────────────────────────────
+  // ── Diagram (read-only Mermaid, with click-to-drill-down) ────────────────────
   async function initDiagram() {
     const empty = document.getElementById('diagram-empty');
-    const render = document.getElementById('diagram-render');
     const errEl = document.getElementById('diagram-error');
     const mtimeEl = document.getElementById('diagram-mtime');
+    const crumb = document.getElementById('diagram-crumb');
     let d = { exists: false, content: '' };
     try { d = await api('GET', '/api/doc/diagram'); } catch (_) {}
     if (!d.exists || !d.content.trim()) { empty.hidden = false; return; }
     if (d.mtime && mtimeEl) mtimeEl.textContent = 'Last updated: ' + new Date(d.mtime).toLocaleString();
-    try {
-      mermaid.initialize({
-        startOnLoad: false, theme: 'base',
-        themeVariables: { primaryColor: '#d7f0e3', primaryTextColor: '#0c3b2c', primaryBorderColor: '#1f8a70', lineColor: '#1f8a70' },
-        flowchart: { curve: 'basis', useMaxWidth: true },
-      });
-      const { svg } = await mermaid.render('pd-diagram-svg', d.content.trim());
-      render.innerHTML = svg;
-      makeInteractive(render);
-    } catch (e) {
-      errEl.hidden = false;
-      errEl.textContent = 'Diagram failed to render: ' + (e && e.message ? e.message : e);
+
+    let manifest = [];
+    try { manifest = await api('GET', '/api/diagrams'); } catch (_) {}
+
+    mermaid.initialize({
+      startOnLoad: false, theme: 'base', securityLevel: 'loose',
+      themeVariables: { primaryColor: '#d7f0e3', primaryTextColor: '#0c3b2c', primaryBorderColor: '#1f8a70', lineColor: '#1f8a70' },
+      flowchart: { curve: 'basis', useMaxWidth: true }, er: { useMaxWidth: true },
+    });
+
+    const stack = [{ name: null, label: 'Overview', content: d.content }];
+    let rid = 0;
+
+    function freshHost() {
+      const fresh = document.createElement('div');
+      fresh.id = 'diagram-render'; fresh.className = 'diagram-render';
+      document.getElementById('diagram-render').replaceWith(fresh);
+      return fresh;
     }
+    async function contentFor(top) {
+      if (top.content != null) return top.content;
+      const res = await fetch('/api/diagrams/' + encodeURIComponent(top.name));
+      if (!res.ok) throw new Error('detail not found');
+      return res.text();
+    }
+    async function show() {
+      const top = stack[stack.length - 1];
+      const renderId = 'pd-d-' + (++rid);
+      let svg;
+      try {
+        const content = await contentFor(top);
+        ({ svg } = await mermaid.render(renderId, content.trim()));
+      } catch (e) {
+        errEl.hidden = false; errEl.textContent = 'Diagram failed to render: ' + (e && e.message ? e.message : e);
+        return;
+      }
+      errEl.hidden = true;
+      const host = freshHost();
+      host.innerHTML = svg;
+      makeInteractive(host);
+      markClickable(host, manifest, drillTo, renderId);
+      host.classList.add('entering');
+      setTimeout(() => host.classList.remove('entering'), 320);
+      renderCrumb();
+    }
+    function drillTo(name) {
+      if (!name || name === stack[stack.length - 1].name) return;
+      if (manifest.length && !manifest.includes(name)) return;   // no detail file → ignore
+      stack.push({ name, label: name.charAt(0).toUpperCase() + name.slice(1) });
+      show();
+    }
+    function renderCrumb() {
+      if (stack.length <= 1) { crumb.hidden = true; crumb.innerHTML = ''; return; }
+      crumb.hidden = false;
+      crumb.innerHTML = stack.map((s, i) =>
+        i === stack.length - 1
+          ? `<span class="crumb-cur">${esc(s.label)}</span>`
+          : `<a href="#" data-i="${i}">${esc(s.label)}</a>`
+      ).join('<span class="crumb-sep">›</span>');
+      crumb.querySelectorAll('a').forEach(a => a.addEventListener('click', (e) => {
+        e.preventDefault(); stack.length = (+a.dataset.i) + 1; show();
+      }));
+    }
+    show();
+  }
+
+  // Tag any node whose EXACT source id has a detail diagram as drillable (works at any depth).
+  function markClickable(host, manifest, onDrill, renderId) {
+    if (!manifest || !manifest.length) return;
+    const prefix = renderId + '-flowchart-';
+    host.querySelectorAll('g.node').forEach((g) => {
+      const id = g.id || '';
+      // mermaid ids look like "<renderId>-flowchart-<sourceId>-<n>"; recover the exact sourceId
+      const core = id.startsWith(prefix) ? id.slice(prefix.length) : id.replace(/^.*?-flowchart-/, '');
+      const sourceId = core.replace(/-\d+$/, '');
+      if (manifest.includes(sourceId)) {
+        g.dataset.drill = sourceId;
+        g.style.cursor = 'pointer';
+        g.style.pointerEvents = 'auto';
+        g.classList.add('drillable');
+      }
+    });
+    // pan/click handling lives in makeInteractive; it invokes this on a real (non-drag) node click
+    host._onNodeClick = onDrill;
   }
 
   // Pan / zoom / fullscreen for the Diagram view.
@@ -368,19 +487,28 @@
     let drag = null;
     render.addEventListener('pointerdown', (e) => {
       if (e.target.closest('.diagram-controls')) return;
-      drag = { x: e.clientX, y: e.clientY, tx, ty };
+      drag = { x: e.clientX, y: e.clientY, tx, ty, target: e.target };  // keep the real down-target
+      render._dragMoved = false;            // for distinguishing click (drill) from drag (pan)
       render.classList.add('dragging');
       render.setPointerCapture(e.pointerId);
     });
     render.addEventListener('pointermove', (e) => {
       if (!drag) return;
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 3) render._dragMoved = true;
       tx = drag.tx + (e.clientX - drag.x);
       ty = drag.ty + (e.clientY - drag.y);
       apply();
     });
     const endDrag = (e) => {
+      const wasClick = drag && !render._dragMoved;
+      const downTarget = drag && drag.target;
       drag = null; render.classList.remove('dragging');
       if (e.pointerId !== undefined) { try { render.releasePointerCapture(e.pointerId); } catch (_) {} }
+      // node click detected from the pointer-DOWN target (robust under pointer capture / Firefox)
+      if (wasClick && render._onNodeClick && downTarget && downTarget.closest) {
+        const g = downTarget.closest('[data-drill]');
+        if (g) render._onNodeClick(g.dataset.drill);
+      }
     };
     render.addEventListener('pointerup', endDrag);
     render.addEventListener('pointercancel', endDrag);

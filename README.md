@@ -4,11 +4,13 @@ Local, per-project documentation app and a shared control surface between you an
 The working pipeline: **you write a Request → Claude writes a Plan → Claude implements it → Claude
 writes a Report.**
 
-Six views:
+Seven views:
 
 - **Workflow** — WYSIWYG markdown editor, saved to `docs/workflow.md` (editable by you).
 - **Diagram** — read-only Mermaid render of `docs/diagram.mmd` (Claude Code writes it; empty until generated).
 - **Architecture** — read-only render of `docs/architecture.md` with auto-TOC + scroll-spy (Claude Code writes it).
+- **Explainers** — rich, illustrated explanations Claude Code writes when a concept is too complex
+  for the chat window: Mermaid diagrams, GitHub-style callouts, and KaTeX math. Read-only; `docs/explainers/`.
 - **Requests** — what you want built. Written in the global **✎ New request** composer (a wide
   slide-in panel available on every view), saved to `docs/requests/`.
 - **Plans** — Claude Code's implementation plans (current state, the change & why, step-by-step,
@@ -22,14 +24,16 @@ Content is **files-first** — everything lives in the host project as plain tex
 <project>/docs/workflow.md        # Workflow view (editable)
 <project>/docs/architecture.md    # read-only in UI; Claude Code edits
 <project>/docs/diagram.mmd        # read-only in UI; Claude Code edits
+<project>/docs/explainers/*.md    # Claude Code's illustrated explainers (read-only in UI)
+<project>/docs/assets/*           # images referenced by explainers (served at /assets)
 <project>/docs/requests/*.md      # your requests (composer writes these)
 <project>/docs/plans/*.md         # Claude Code's plans (read-only in UI)
 <project>/docs/reports/*.md       # Claude Code's reports (read-only in UI)
 <project>/.claude/project-docs.md # the Claude Code integration contract (tracked)
 ```
 
-Files in `requests/`, `plans/`, and `reports/` are named `YYYY-MM-DD-NN-slug.md` — `NN` is a
-per-day sequence so same-day documents stay distinct and every list shows newest first.
+Files in `requests/`, `plans/`, `reports/`, and `explainers/` are named `YYYY-MM-DD-NN-slug.md` —
+`NN` is a per-day sequence so same-day documents stay distinct and every list shows newest first.
 
 `.project-docs/` is the installed app and is fully gitignored — one folder, one purpose. The
 contract lives in `.claude/project-docs.md` (with your other Claude config). Title defaults to the
