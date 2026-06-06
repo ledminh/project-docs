@@ -27,7 +27,17 @@ plain files. The working pipeline is:
 - \`docs/idea.md\` — the user's initial idea capture. User-editable.
 - \`docs/workflow.md\` — how the app/feature should work. User-editable; you may populate it on request.
 - \`docs/architecture.md\` — current architecture. **Read-only in the UI — you maintain this file.**
-- \`docs/diagram.mmd\` — a Mermaid diagram of the system. **Read-only in the UI — you maintain this file.**
+- \`docs/diagram.mmd\` — the system overview Mermaid diagram. **Read-only in the UI — you maintain it.**
+- \`docs/diagrams/<node-id>.mmd\` — optional **detail** diagrams (drill-down). A node becomes clickable
+  automatically when a file's name **exactly matches that node's id** — no extra directives. Example:
+  a node \`backend\` in \`diagram.mmd\` → write \`docs/diagrams/backend.mmd\`.
+  **Nesting is unlimited and works the same way at every level**: a node inside \`backend.mmd\` (say id
+  \`routes\`) drills in when \`docs/diagrams/routes.mmd\` exists. To avoid name clashes across branches,
+  namespace deeper ids like \`backend-routes\` (node id) ↔ \`backend-routes.mmd\`. The app shows a
+  breadcrumb (\`Overview › Backend › Routes\`). Keep depth shallow (1–2 levels) unless deeper truly helps;
+  keep every detail diagram accurate to the code. **Prefer structural "what contains what" diagrams**
+  (components, modules, files, fields) — the user reads these as a reference map of the codebase, not a
+  trace. Use sequence/behavioral diagrams sparingly, only when the runtime flow itself is the point.
 - \`docs/requests/\` — what the user wants built, written in the app's composer. **You read these.**
 - \`docs/plans/\` — your implementation plans. **Read-only in the UI — you write these.**
 - \`docs/reports/\` — your work reports. **Read-only in the UI — you write these.**
