@@ -10,7 +10,7 @@ const DOCS = {
   workflow:     { file: 'workflow.md',     writable: true  },
   whiteboard:   { file: 'whiteboard.md',   writable: true  }, // shared: user + Claude Code
   architecture: { file: 'architecture.md', writable: false }, // Claude Code only
-  diagram:      { file: 'diagram.mmd',     writable: false }, // Claude Code only
+  diagram:      { file: 'diagram-overview.mmd',     writable: false }, // Claude Code only
 };
 
 function spec(name) {

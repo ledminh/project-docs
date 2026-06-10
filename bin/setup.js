@@ -28,10 +28,10 @@ plain files. The working pipeline is:
 - \`docs/workflow.md\` — how the app/feature should work. User-editable; you may populate it on request.
 - \`docs/whiteboard.md\` — the **shared thinking space**. Both you and the user edit it. **See below.**
 - \`docs/architecture.md\` — current architecture. **Read-only in the UI — you maintain this file.**
-- \`docs/diagram.mmd\` — the system overview Mermaid diagram. **Read-only in the UI — you maintain it.**
+- \`docs/diagram-overview.mmd\` — the system overview Mermaid diagram. **Read-only in the UI — you maintain it.**
 - \`docs/diagrams/<node-id>.mmd\` — optional **detail** diagrams (drill-down). A node becomes clickable
   automatically when a file's name **exactly matches that node's id** — no extra directives. Example:
-  a node \`backend\` in \`diagram.mmd\` → write \`docs/diagrams/backend.mmd\`.
+  a node \`backend\` in \`diagram-overview.mmd\` → write \`docs/diagrams/backend.mmd\`.
   **Nesting is unlimited and works the same way at every level**: a node inside \`backend.mmd\` (say id
   \`routes\`) drills in when \`docs/diagrams/routes.mmd\` exists. To avoid name clashes across branches,
   namespace deeper ids like \`backend-routes\` (node id) ↔ \`backend-routes.mmd\`. The app shows a
@@ -110,9 +110,9 @@ files. (The whiteboard is the one exception: it's a scratchpad and may be rewrit
 ## Populating views
 
 - When the user captures an idea (\`docs/idea.md\`), generate \`docs/workflow.md\` **and**
-  \`docs/diagram.mmd\` **together**. The first diagram should show only the general components
+  \`docs/diagram-overview.mmd\` **together**. The first diagram should show only the general components
   (frontend / backend / database / mobile / web, etc.), then refine it as the architecture firms up.
-- Keep \`docs/architecture.md\` and \`docs/diagram.mmd\` in sync with the real codebase as it changes.
+- Keep \`docs/architecture.md\` and \`docs/diagram-overview.mmd\` in sync with the real codebase as it changes.
 
 There is no database. Everything is plain text under \`docs/\`. The app code lives in
 \`.project-docs/\` (gitignored); this contract lives in \`.claude/project-docs.md\` (tracked).

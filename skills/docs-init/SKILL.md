@@ -33,10 +33,10 @@ Goal: drop the Project Docs app into the **current working directory** (the proj
    ```bash
    cd .project-docs && npm start    # → http://localhost:4500
    ```
-   On a brand-new project the app opens on the **idea capture** editor. Once the user saves an idea, offer to generate `docs/workflow.md` and `docs/diagram.mmd` together (general components first).
+   On a brand-new project the app opens on the **idea capture** editor. Once the user saves an idea, offer to generate `docs/workflow.md` and `docs/diagram-overview.mmd` together (general components first).
 
 ## Notes
 - `.project-docs/` is the installed app and is entirely gitignored. The contract lives in `.claude/project-docs.md` (tracked) so no folder mixes tracked + ignored content.
 - The app is files-first: everything is plain text under `docs/` — no database. Requests, plans, and reports are one file each, named `YYYY-MM-DD-NN-slug.md`.
-- `docs/architecture.md` and `docs/diagram.mmd` are read-only in the UI — you maintain those files. `docs/workflow.md` and `docs/idea.md` are user-editable.
+- `docs/architecture.md` and `docs/diagram-overview.mmd` are read-only in the UI — you maintain those files. `docs/workflow.md` and `docs/idea.md` are user-editable.
 - The pipeline: the user writes a request (composer → `docs/requests/`), you write a plan to `docs/plans/` (current state, change & why, steps, test suite, before/after mermaid diagrams), implement it step by step, then write a long-form what/why/dataflow report to `docs/reports/`.

@@ -114,7 +114,7 @@ app.get('/architecture', (_req, res) => {
   res.send(shell({ viewLabel: 'Architecture', active: 'architecture', content, pd: { view: 'architecture', docName: 'architecture' }, headExtra: DOC_HEAD }));
 });
 
-// Diagram — read-only Mermaid render of docs/diagram.mmd (not seeded).
+// Diagram — read-only Mermaid render of docs/diagram-overview.mmd (not seeded).
 app.get('/diagram', (_req, res) => {
   const content = `
   <section class="diagram-view" data-view="diagram">
@@ -126,7 +126,7 @@ app.get('/diagram', (_req, res) => {
     </header>
     <div id="diagram-empty" class="empty-state" hidden>
       <p><strong>No diagram yet.</strong></p>
-      <p>Ask Claude Code to generate one (general components first) into <code>docs/diagram.mmd</code>.</p>
+      <p>Ask Claude Code to generate one (general components first) into <code>docs/diagram-overview.mmd</code>.</p>
     </div>
     <div id="diagram-error" class="diagram-error" hidden></div>
     <div id="diagram-render" class="diagram-render"></div>

@@ -10,7 +10,7 @@ Six views:
 - **Whiteboard** — a shared, editable thinking space (`docs/whiteboard.md`). You sketch ideas and
   questions; Claude Code edits the same file and can draw diagrams, illustrations, callouts, and math
   onto it. An **Edit ⇄ Preview** toggle renders Claude's diagrams/math. Editable by both.
-- **Diagram** — read-only Mermaid render of `docs/diagram.mmd` (Claude Code writes it; empty until generated).
+- **Diagram** — read-only Mermaid render of `docs/diagram-overview.mmd` (Claude Code writes it; empty until generated).
 - **Architecture** — read-only render of `docs/architecture.md` with auto-TOC + scroll-spy (Claude Code writes it).
 - **Plans** — Claude Code's implementation plans (current state, the change & why, step-by-step,
   test suite, before/after Mermaid diagrams). Read-only; `docs/plans/`.
@@ -23,7 +23,7 @@ Content is **files-first** — everything lives in the host project as plain tex
 <project>/docs/workflow.md        # Workflow view (editable)
 <project>/docs/whiteboard.md      # Whiteboard — shared, editable by you AND Claude Code
 <project>/docs/architecture.md    # read-only in UI; Claude Code edits
-<project>/docs/diagram.mmd        # read-only in UI; Claude Code edits
+<project>/docs/diagram-overview.mmd        # read-only in UI; Claude Code edits
 <project>/docs/assets/*           # images Claude Code draws onto the whiteboard (served at /assets)
 <project>/docs/plans/*.md         # Claude Code's plans (read-only in UI)
 <project>/docs/reports/*.md       # Claude Code's reports (read-only in UI)
