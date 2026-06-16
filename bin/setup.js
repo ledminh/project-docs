@@ -79,13 +79,22 @@ status: "draft"
 ---
 \`\`\`
 
-…and exactly these sections:
+…and **two parts**, separated by a clear divider (\`# Part 1 — For the human\` / \`# Part 2 — For AI\`):
 
-1. \`## Current state\` — the relevant parts of the project as they are today.
-2. \`## What this changes and why\` — the goal, the reasoning, alternatives considered.
-3. \`## Step-by-step\` — the ordered implementation steps, each small enough to verify.
-4. \`## Test suite\` — how to test the change after implementing (cases, commands, expected results).
-5. \`## Diagrams\` — **two Mermaid diagrams: the current state and the finished state.**
+**Part 1 — For the human** (readable, intuitive, high-level — what the user reads to track progress).
+Exactly these four sections:
+
+1. \`## 1. Current state\` — the relevant parts of the project as they are today.
+2. \`## 2. What we want to change and why\` — the goal, the reasoning (keep deep rationale for Part 2).
+3. \`## 3. Step-by-step\` — the ordered steps, each small enough to verify; a compact status-bearing
+   list/table is ideal so the user can see progress at a glance.
+4. \`## 4. Diagram\` — **two Mermaid diagrams: the current state and the finished state.**
+
+**Part 2 — For AI** (my working memory — as detailed/cryptic as needed; the goal is that any AI can
+resume cleanly from it alone). Put here: the authoritative resume/status state, branch + commit
+tables, deviations and "as built" notes, wire-shape/contract decisions, alternatives considered, the
+full per-step implementation bodies (checkboxes + file links), the **Test suite** (cases, commands,
+expected results — moved out of Part 1), and known follow-ups.
 
 When the user asks you to **implement a plan**, follow it step by step and keep its \`status\`
 frontmatter current: \`draft\` → \`in-progress\` → \`implemented\`.
@@ -96,13 +105,20 @@ frontmatter current: \`draft\` → \`in-progress\` → \`implemented\`.
 the work done. Frontmatter: \`title\`, \`date\`, \`author\`, \`summary\` (one sentence), and optionally
 \`plan:\` referencing the plan that drove the work.
 
-The body is **long-form and educational** — the user reads reports to understand the codebase and
-to practice reading. Structure it with \`##\` sections covering:
+Reports are also **two parts**, separated by a clear divider (\`# Part 1 — For the human\` /
+\`# Part 2 — For AI\`):
+
+**Part 1 — For the human** — long-form and **educational** (the user reads reports to understand the
+codebase and practice reading). Structure it with \`##\` sections covering:
 
 1. **What I did** — the changes, files touched, features added.
 2. **Why** — your reasoning, alternatives considered, trade-offs.
 3. **How the data flows** — walk through the runtime path of the code you wrote or changed,
    step by step. Include Mermaid diagrams where they help (they render in the app).
+
+**Part 2 — For AI** — my working memory of the work: precise files/functions/commits touched, test
+results and counts, deviations from the plan, gotchas, and anything that helps a future AI session
+pick up the thread. As detailed/cryptic as needed.
 
 Write thoroughly; length is welcome. Never delete or rewrite existing reports or plans — add new
 files. (The whiteboard is the one exception: it's a scratchpad and may be rewritten freely.)
