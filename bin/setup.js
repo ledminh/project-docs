@@ -120,8 +120,18 @@ codebase and practice reading). Structure it with \`##\` sections covering:
 results and counts, deviations from the plan, gotchas, and anything that helps a future AI session
 pick up the thread. As detailed/cryptic as needed.
 
-Write thoroughly; length is welcome. Never delete or rewrite existing reports or plans — add new
-files. (The whiteboard is the one exception: it's a scratchpad and may be rewritten freely.)
+Write thoroughly; length is welcome. The "don't rewrite existing reports/plans" rule protects the
+**durable record** — it does not mean "never touch a plan." Concretely:
+
+- **Forbidden:** deleting a report/plan file, or wholesale-rewriting an existing one's content
+  (erasing or falsifying history). New work goes in a **new file**.
+- **Expected** while implementing a plan: annotate *that* plan in place — flip its \`status\`
+  frontmatter (draft → in-progress → implemented), tick its step checkboxes \`[ ]\` → \`[x]\`, and append
+  "as built" / deviation notes. This is maintenance, not a rewrite.
+- **Allowed** for a still-\`draft\` plan (not yet implemented): add or refine steps — that's planning,
+  not revising implemented history.
+
+The whiteboard is the one full exception: it's a scratchpad and may be cleared or rewritten freely.
 
 ## Populating views
 
